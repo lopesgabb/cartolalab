@@ -17,10 +17,19 @@ export async function GET(request: Request) {
   const results = [];
 
   try {
+    const mercadoStatusReq = await fetch('https://api.cartola.globo.com/mercado/status', { cache: 'no-store' });
+    const mercadoStatus = await mercadoStatusReq.json();
+    const currentRound = mercadoStatus.rodada_atual;
+
     for (let r = start; r <= end; r++) {
       console.log(`Fetching round ${r}...`);
+      
+      const atletasUrl = r === currentRound 
+        ? 'https://api.cartola.globo.com/atletas/pontuados'
+        : `https://api.cartola.globo.com/atletas/pontuados/${r}`;
+
       const [responseAtletas, responsePartidas] = await Promise.all([
-        fetch(`https://api.cartola.globo.com/atletas/pontuados/${r}`, { cache: 'no-store' }),
+        fetch(atletasUrl, { cache: 'no-store' }),
         fetch(`https://api.cartola.globo.com/partidas/${r}`, { cache: 'no-store' })
       ]);
 
