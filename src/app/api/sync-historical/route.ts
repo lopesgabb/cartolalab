@@ -111,3 +111,36 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const round = searchParams.get('round');
+  if (!round) return NextResponse.json({ error: 'Missing round param' }, { status: 400 });
+  
+  try {
+    const { collection, getDocs } = await import('firebase/firestore');
+    // Delete atletas
+    const atletasSnap = await getDocs(collection(db, 'rodadas', round, 'atletas'));
+    let batch = writeBatch(db);
+    let opCount = 0;
+    atletasSnap.forEach(d => {
+      batch.delete(d.ref);
+      opCount++;
+    });
+    if (opCount > 0) await batch.commit();
+
+    // Delete partidas
+    const partidasSnap = await getDocs(collection(db, 'rodadas', round, 'partidas'));
+    batch = writeBatch(db);
+    opCount = 0;
+    partidasSnap.forEach(d => {
+      batch.delete(d.ref);
+      opCount++;
+    });
+    if (opCount > 0) await batch.commit();
+
+    return NextResponse.json({ success: true, message: `Round ${round} data cleared` });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
