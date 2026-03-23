@@ -462,8 +462,7 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
 }
 
 function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
-  const { scout, jogos_num: jogos, scoutsConquistados, scoutsCedidos } = atleta;
-  const { total, breakdown } = calcularScoutPoints(scout);
+  const { scoutsConquistados, scoutsCedidos } = atleta;
 
   const SCOUT_LABELS: Record<string, string> = {
     G: 'Gol', A: 'Assist.', SG: 'S. Gol', DS: 'Desarme', FC: 'F. Comet.', FS: 'F. Sofr.',
@@ -471,6 +470,9 @@ function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
     CA: 'C. Amarelo', CV: 'C. Vermelho', PC: 'P. Comet.', PP: 'P. Perdido', PS: 'P. Sofr.',
     I: 'Imped.', V: 'Vitória', DP: 'Def. Pênalti',
   };
+
+  const NEGATIVE_SCOUTS = ['FC', 'GS', 'CA', 'CV', 'PC', 'PP', 'I'];
+  const isScoutPositive = (key: string) => !NEGATIVE_SCOUTS.includes(key);
 
   const renderScoutTag = (key: string, value: string | number, isPositive: boolean, suffix: string = '') => {
     return (
@@ -496,17 +498,18 @@ function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
       {/* Coluna 1: Scouts Pessoais do Jogador */}
       <div style={{ background: 'var(--color-bg-primary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-dim)', letterSpacing: '0.05em' }}>SEUS SCOUTS (MÉDIAS/JOGO)</span>
-          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: total >= 0 ? 'var(--color-positive)' : 'var(--color-negative)' }}>
-            Geral: {total.toFixed(1)} pts
+          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-dim)', letterSpacing: '0.05em' }}>M. CONQUISTADA (NO MANDO)</span>
+          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: (atleta.mediaConquistada || 0) >= 0 ? 'var(--color-positive)' : 'var(--color-negative)' }}>
+            ±{atleta.desvioPadraoConquistada?.toFixed(2) || '0.00'} pts
           </span>
         </div>
-        {breakdown.length === 0 ? (
-          <div style={{ color: 'var(--color-text-dim)', fontSize: '0.85rem', textAlign: 'center', padding: '2rem' }}>Sem scouts registrados.</div>
+        {(!scoutsConquistados || Object.keys(scoutsConquistados).length === 0) ? (
+          <div style={{ color: 'var(--color-text-dim)', fontSize: '0.85rem', textAlign: 'center', padding: '2rem' }}>Sem scouts registrados neste cenário.</div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
-            {breakdown.filter(b => b.points > 0).map(b => renderScoutTag(b.key, jogos > 0 ? (b.count / jogos).toFixed(2) : '0', true, 'x'))}
-            {breakdown.filter(b => b.points < 0).map(b => renderScoutTag(b.key, jogos > 0 ? (b.count / jogos).toFixed(2) : '0', false, 'x'))}
+            {Object.entries(scoutsConquistados)
+              .sort((a, b) => b[1].media - a[1].media)
+              .map(([key, stat]) => renderScoutTag(key, stat.media.toFixed(2), isScoutPositive(key), ''))}
           </div>
         )}
       </div>
@@ -523,9 +526,9 @@ function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
           <div style={{ color: 'var(--color-text-dim)', fontSize: '0.85rem', textAlign: 'center', padding: '2rem' }}>Sem dados cedidos neste cenário.</div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
-             {Object.entries(scoutsCedidos).sort((a, b) => a[1].media - b[1].media).map(([key, stat]) => 
-              renderScoutTag(key, stat.media.toFixed(2), false, '')
-            )}
+             {Object.entries(scoutsCedidos)
+              .sort((a, b) => b[1].media - a[1].media)
+              .map(([key, stat]) => renderScoutTag(key, stat.media.toFixed(2), isScoutPositive(key), ''))}
           </div>
         )}
       </div>

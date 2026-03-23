@@ -60,10 +60,14 @@ export async function computeAdvancedIndicators(
   // 3. Compute and attach indicators
   return atletasAtuais.map((atleta) => {
     // Clone to avoid mutating the original fetched data
-    const enriched = { ...atleta };
+    const enriched = { ...atleta } as AtletaEnriquecido;
     const pStats = playerStats[atleta.atleta_id];
-    
-    // Player historical averages
+
+    // Injetar a pontuação da última rodada caso a API do Cartola tenha zerado (mercado aberto)
+    if (pStats && pStats.pontosUltimaRodada !== undefined) {
+      enriched.pontos_num = pStats.pontosUltimaRodada;
+    }
+
     // Player historical averages and regularity
     if (pStats) {
       enriched.mediaGeralPeriodo = pStats.total.jogos > 0 ? pStats.total.pontos / pStats.total.jogos : 0;
@@ -238,7 +242,8 @@ async function loadHistoricalDataFromFirestore(timeframe: Timeframe) {
   const playerStats: Record<number, { 
     total: AggregatedStats; 
     casa: AggregatedStats; 
-    fora: AggregatedStats 
+    fora: AggregatedStats;
+    pontosUltimaRodada?: number;
   }> = {};
 
   const teamStats: Record<number, TeamStats> = {};
@@ -308,6 +313,11 @@ async function loadHistoricalDataFromFirestore(timeframe: Timeframe) {
             casa: { jogos: 0, pontos: 0, sumSq: 0, scouts: {} }, 
             fora: { jogos: 0, pontos: 0, sumSq: 0, scouts: {} } 
           };
+        }
+
+        // Salvar a pontuação se for a última rodada do recorte
+        if (round === Math.max(...targetRounds)) {
+          playerStats[atletaId].pontosUltimaRodada = atleta.pontuacao;
         }
         
         const pStat = playerStats[atletaId];
