@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: '/jogadores', label: 'Jogadores' },
   { href: '/times', label: 'Times' },
   { href: '/comparar', label: 'Comparar' },
+  { href: '/escalacao', label: '🏟️ Escalação' },
 ];
 
 export default function Header() {

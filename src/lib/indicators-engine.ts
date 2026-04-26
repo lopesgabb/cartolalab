@@ -1,12 +1,18 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
-import type { AtletaEnriquecido, Partida, AtletaPontuado, Scout } from '@/types/cartola';
+import type { AtletaEnriquecido, Partida, AtletaPontuado, Scout, ScoutContextStats, ScoutStatsObj } from '@/types/cartola';
+import { SCOUT_POINTS, ROUND_DECAY } from './constants';
 
 export type Timeframe = '3' | '5' | 'all';
 
 // In-memory cache for historical data to prevent hitting Firestore on every page load
 const historicalCache = new Map<string, any>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/** Call this after a successful sync to force fresh data on next request. */
+export function clearCache(): void {
+  historicalCache.clear();
+}
 
 interface ScoutStats {
   pontos: number;
@@ -17,6 +23,8 @@ interface AggregatedStats {
   jogos: number;
   pontos: number;
   sumSq: number;
+  jogosReais?: number;
+  pontosReais?: number;
   scouts: Partial<Record<keyof Scout, ScoutStats>>;
 }
 
@@ -34,7 +42,7 @@ export async function computeAdvancedIndicators(
 ): Promise<AtletaEnriquecido[]> {
   
   // 1. Fetch historical data from Firestore
-  const cacheKey = `history_${timeframe}`;
+  const cacheKey = `history_v2_${timeframe}`;
   let historyData = historicalCache.get(cacheKey);
 
   if (!historyData || Date.now() - historyData.timestamp > CACHE_TTL) {
@@ -44,7 +52,7 @@ export async function computeAdvancedIndicators(
     historyData = historyData.data;
   }
 
-  const { playerStats, teamStats } = historyData;
+  const { playerStats, teamStats, globalLeagueAverages } = historyData;
 
   // 2. Map current upcoming matches to know Home/Away status and Opponent for each team
   // Record<clube_id, { isHome: boolean, opponentId: number }>
@@ -70,12 +78,17 @@ export async function computeAdvancedIndicators(
 
     // Player historical averages and regularity
     if (pStats) {
-      enriched.mediaGeralPeriodo = pStats.total.jogos > 0 ? pStats.total.pontos / pStats.total.jogos : 0;
-      enriched.mediaCasaPeriodo = pStats.casa.jogos > 0 ? pStats.casa.pontos / pStats.casa.jogos : 0;
-      enriched.mediaForaPeriodo = pStats.fora.jogos > 0 ? pStats.fora.pontos / pStats.fora.jogos : 0;
+      const gJogos = pStats.total.jogosReais || 0;
+      enriched.mediaGeralPeriodo = gJogos > 0 ? (pStats.total.pontosReais || 0) / gJogos : 0;
       
-      // Regularidade individual (Desvio Padrão)
-      const variance = (pStats.total.sumSq / pStats.total.jogos) - (enriched.mediaGeralPeriodo ** 2);
+      const cJogos = pStats.casa.jogosReais || 0;
+      enriched.mediaCasaPeriodo = cJogos > 0 ? (pStats.casa.pontosReais || 0) / cJogos : 0;
+      
+      const fJogos = pStats.fora.jogosReais || 0;
+      enriched.mediaForaPeriodo = fJogos > 0 ? (pStats.fora.pontosReais || 0) / fJogos : 0;
+      
+      // Regularidade individual (Desvio Padrão) uses weighted moving variance
+      const variance = (pStats.total.sumSq / pStats.total.jogos) - ((pStats.total.pontos / pStats.total.jogos) ** 2);
       enriched.regularidade = variance > 0 ? Math.sqrt(variance) : 0;
     } else {
       enriched.mediaGeralPeriodo = 0;
@@ -157,7 +170,145 @@ export async function computeAdvancedIndicators(
 
       // SOMA
       enriched.somaConqCed = mConq + mCed;
+      enriched.proximoJogoMando = isHome ? 'casa' : 'fora';
 
+      // Extract Player Scouts across contexts
+      const scoutsPlayer: ScoutContextStats = { total: {}, casa: {}, fora: {} };
+      if (pStats) {
+        const buildScoutCtx = (aggStat: AggregatedStats): Partial<Record<keyof Scout, ScoutStatsObj>> => {
+          const res: Partial<Record<keyof Scout, ScoutStatsObj>> = {};
+          const count = aggStat.jogosReais || aggStat.jogos;
+          if (count > 0 && aggStat.scouts) {
+            for (const [key, val] of Object.entries(aggStat.scouts)) {
+              if (val) {
+                const s = key as keyof Scout;
+                const media = val.pontos / count;
+                const scVariance = (val.sumSq / count) - (media * media);
+                const dp = scVariance > 0 ? Math.sqrt(scVariance) : 0;
+                res[s] = { media, desvioPadrao: dp };
+              }
+            }
+          }
+          return res;
+        };
+        scoutsPlayer.total = buildScoutCtx(pStats.total);
+        scoutsPlayer.casa = buildScoutCtx(pStats.casa);
+        scoutsPlayer.fora = buildScoutCtx(pStats.fora);
+      }
+      enriched.scoutsPlayer = scoutsPlayer;
+
+      // Extract Opponent Concededs across contexts
+      const scoutsAdversario: ScoutContextStats = { total: {}, casa: {}, fora: {} };
+      if (oppStats) {
+        const buildScoutCtx = (aggStat: AggregatedStats): Partial<Record<keyof Scout, ScoutStatsObj>> => {
+          const res: Partial<Record<keyof Scout, ScoutStatsObj>> = {};
+          const count = aggStat.jogosReais || aggStat.jogos;
+          if (count > 0 && aggStat.scouts) {
+            for (const [key, val] of Object.entries(aggStat.scouts)) {
+              if (val) {
+                const s = key as keyof Scout;
+                const media = val.pontos / count;
+                const scVariance = (val.sumSq / count) - (media * media);
+                const dp = scVariance > 0 ? Math.sqrt(scVariance) : 0;
+                res[s] = { media, desvioPadrao: dp };
+              }
+            }
+          }
+          return res;
+        };
+
+        const cCasa = oppStats.cedidosCasa[pos] || { jogos: 0, pontos: 0, sumSq: 0, scouts: {} };
+        const cFora = oppStats.cedidosFora[pos] || { jogos: 0, pontos: 0, sumSq: 0, scouts: {} };
+
+        scoutsAdversario.casa = buildScoutCtx(cCasa);
+        scoutsAdversario.fora = buildScoutCtx(cFora);
+        
+        const totalOppAgg: AggregatedStats = {
+           jogos: cCasa.jogos + cFora.jogos,
+           pontos: cCasa.pontos + cFora.pontos,
+           sumSq: cCasa.sumSq + cFora.sumSq,
+           scouts: {}
+        };
+        // Merge scouts for total
+        for (const [key, val] of Object.entries(cCasa.scouts)) {
+           if (val) {
+             const s = key as keyof Scout;
+             const v = val as { pontos: number; sumSq: number };
+             totalOppAgg.scouts[s] = { pontos: v.pontos, sumSq: v.sumSq };
+           }
+        }
+        for (const [key, val] of Object.entries(cFora.scouts)) {
+           if (val) {
+             const s = key as keyof Scout;
+             const v = val as { pontos: number; sumSq: number };
+             if (!totalOppAgg.scouts[s]) totalOppAgg.scouts[s] = { pontos: 0, sumSq: 0 };
+             totalOppAgg.scouts[s]!.pontos += v.pontos;
+             totalOppAgg.scouts[s]!.sumSq += v.sumSq;
+           }
+        }
+        scoutsAdversario.total = buildScoutCtx(totalOppAgg);
+      }
+      enriched.scoutsAdversario = scoutsAdversario;
+
+      // Compute Índice de Momento: simple average of last 3 rounds
+      if (pStats && pStats.roundHistory.length > 0) {
+        const hist = pStats.roundHistory;
+        enriched.lastRoundsHistory = hist;
+
+        const last3 = hist.slice(-3);
+        const sum = last3.reduce((acc: number, val: number) => acc + val, 0);
+        enriched.indiceMomento = last3.length > 0 ? sum / last3.length : 0;
+      } else {
+        enriched.lastRoundsHistory = [];
+        enriched.indiceMomento = 0;
+      }
+
+      // 70% Mando / 30% Total do cruzamento P(jogador) e P(adversario_cede)
+      let aiScore = 0;
+      const allScouts = new Set([...Object.keys(scoutsPlayer.total || {}), ...Object.keys(scoutsAdversario.total || {})]);
+      for (const k of allScouts) {
+        const s = k as keyof Scout;
+        const ptsValue = SCOUT_POINTS[s] || 0;
+        
+        const pTotal = scoutsPlayer.total?.[s]?.media || 0;
+        const aTotal = scoutsAdversario.total?.[s]?.media || 0;
+        const avgTotal = (pTotal + aTotal) / 2;
+
+        const homeState = enriched.proximoJogoMando;
+        const oppState = homeState === 'casa' ? 'fora' : 'casa';
+        
+        const pMando = homeState ? (scoutsPlayer[homeState]?.[s]?.media || 0) : pTotal;
+        const aMando = oppState ? (scoutsAdversario[oppState]?.[s]?.media || 0) : aTotal;
+        const avgMando = (pMando + aMando) / 2;
+
+        const proj = (avgMando * 0.7) + (avgTotal * 0.3);
+        const scoutPts = proj * ptsValue;
+        aiScore += scoutPts;
+      }
+      
+      // Plugar Dificuldade (FDR)
+      let fdrMultiplier = 1.0;
+      if (globalLeagueAverages && globalLeagueAverages[enriched.posicao_id]) {
+        const glStats = globalLeagueAverages[enriched.posicao_id];
+        // Média global de pontos cedidos para esta posição
+        const globalConcededAvg = glStats.jogos > 0 ? glStats.pontos / glStats.jogos : 0;
+        
+        if (globalConcededAvg > 0 && enriched.mediaCedida !== undefined) {
+          fdrMultiplier = enriched.mediaCedida / globalConcededAvg;
+        }
+      }
+      // Limite do FDR: entre 0.7 e 1.3 (± 30%)
+      fdrMultiplier = Math.max(0.7, Math.min(1.3, fdrMultiplier));
+      
+      // Plugar Momentum
+      let momentumMultiplier = 1.0;
+      if (enriched.mediaGeralPeriodo && enriched.mediaGeralPeriodo > 0 && enriched.indiceMomento !== undefined) {
+        momentumMultiplier = enriched.indiceMomento / enriched.mediaGeralPeriodo;
+      }
+      // Limite do Momentum: entre 0.7 e 1.3 (± 30%)
+      momentumMultiplier = Math.max(0.7, Math.min(1.3, momentumMultiplier));
+
+      enriched.previsaoIA = aiScore * fdrMultiplier * momentumMultiplier;
       // --- IMPLEMENTAÇÃO DOS 4 PILARES DO SCORE ---
       
       const playerMediaNoMando = isHome ? enriched.mediaCasaPeriodo : enriched.mediaForaPeriodo;
@@ -167,17 +318,13 @@ export async function computeAdvancedIndicators(
       const projBase = (playerMediaNoMando * 0.6) + (mediaConfronto * 0.4);
 
       // PILAR 2 & 4: Encaixe de Scouts & Peso dos Scouts (Afinidade Tática)
-      // Definimos o peso dos scouts usando a constante SCOUT_POINTS do Cartola
-      const SCOUT_POINTS: Record<string, number> = {
-        G: 8.0, A: 5.0, SG: 5.0, DS: 1.2, FC: -0.5, FS: 0.5,
-        FF: 0.8, FD: 1.0, FT: 3.0, DE: 3.0, GS: -2.0, CA: -2.0,
-        CV: -5.0, PC: -3.0, PP: -4.0, PS: 1.0, I: -0.5, V: 1.0, DP: 7.0,
-      };
+      // SCOUT_POINTS is imported from constants.ts
 
       let afinidadeTatica = 0;
-      if (pStats && pStats.total.jogos > 0 && enriched.scoutsCedidos) {
+      if (pStats && (pStats.total.jogosReais || pStats.total.jogos) > 0 && enriched.scoutsCedidos) {
+        const pTotalJogos = pStats.total.jogosReais || pStats.total.jogos;
         for (const [s, data] of Object.entries(enriched.scoutsCedidos)) {
-          const pScoutMedia = (pStats.total.scouts[s as keyof Scout]?.pontos || 0) / pStats.total.jogos;
+          const pScoutMedia = (pStats.total.scouts[s as keyof Scout]?.pontos || 0) / pTotalJogos;
           const oppCedMedia = data.media;
           const sPoint = SCOUT_POINTS[s] || 0;
           
@@ -244,6 +391,7 @@ async function loadHistoricalDataFromFirestore(timeframe: Timeframe) {
     casa: AggregatedStats; 
     fora: AggregatedStats;
     pontosUltimaRodada?: number;
+    roundHistory: number[]; // raw score per round, ascending order
   }> = {};
 
   const teamStats: Record<number, TeamStats> = {};
@@ -271,8 +419,12 @@ async function loadHistoricalDataFromFirestore(timeframe: Timeframe) {
     // So we should group by MATCH first, sum points per position, then add to TeamStats.
   };
 
-  // 3. Process each round
-  for (const round of targetRounds) {
+  // 3. Process each round — most recent round gets weight 1.0, older rounds get 0.9^n
+  const totalRounds = targetRounds.length;
+  for (let roundIdx = 0; roundIdx < totalRounds; roundIdx++) {
+    const round = targetRounds[roundIdx];
+    // Weight: 1.0 for most recent, ROUND_DECAY^1 for second-to-last, etc.
+    const decayWeight = Math.pow(ROUND_DECAY, totalRounds - 1 - roundIdx);
     const partidasSnap = await getDocs(collection(db, 'rodadas', String(round), 'partidas'));
     const atletasSnap = await getDocs(collection(db, 'rodadas', String(round), 'atletas'));
 
@@ -309,11 +461,15 @@ async function loadHistoricalDataFromFirestore(timeframe: Timeframe) {
         // --- 3a. Update Player Stats ---
         if (!playerStats[atletaId]) {
           playerStats[atletaId] = { 
-            total: { jogos: 0, pontos: 0, sumSq: 0, scouts: {} }, 
-            casa: { jogos: 0, pontos: 0, sumSq: 0, scouts: {} }, 
-            fora: { jogos: 0, pontos: 0, sumSq: 0, scouts: {} } 
+            total: { jogos: 0, pontos: 0, sumSq: 0, jogosReais: 0, pontosReais: 0, scouts: {} }, 
+            casa: { jogos: 0, pontos: 0, sumSq: 0, jogosReais: 0, pontosReais: 0, scouts: {} }, 
+            fora: { jogos: 0, pontos: 0, sumSq: 0, jogosReais: 0, pontosReais: 0, scouts: {} },
+            roundHistory: [],
           };
         }
+
+        // Track per-round raw score for sparkline
+        playerStats[atletaId].roundHistory.push(atleta.pontuacao);
 
         // Salvar a pontuação se for a última rodada do recorte
         if (round === Math.max(...targetRounds)) {
@@ -323,20 +479,28 @@ async function loadHistoricalDataFromFirestore(timeframe: Timeframe) {
         const pStat = playerStats[atletaId];
         const matchContext = roundMatches[atleta.clube_id];
         
-        // Sum total
-        pStat.total.jogos += 1;
-        pStat.total.pontos += atleta.pontuacao;
-        pStat.total.sumSq += (atleta.pontuacao ** 2);
+        // Sum total — apply exponential decay so recent rounds weight more
+        const weightedPts = atleta.pontuacao * decayWeight;
+        pStat.total.jogos += decayWeight; // weighted count
+        pStat.total.pontos += weightedPts;
+        pStat.total.sumSq += (weightedPts ** 2);
+        
+        pStat.total.jogosReais = (pStat.total.jogosReais || 0) + 1;
+        pStat.total.pontosReais = (pStat.total.pontosReais || 0) + atleta.pontuacao;
         
         if (matchContext) {
           if (matchContext.isHome) {
-            pStat.casa.jogos += 1;
-            pStat.casa.pontos += atleta.pontuacao;
-            pStat.casa.sumSq += (atleta.pontuacao ** 2);
+            pStat.casa.jogos += decayWeight;
+            pStat.casa.pontos += weightedPts;
+            pStat.casa.sumSq += (weightedPts ** 2);
+            pStat.casa.jogosReais = (pStat.casa.jogosReais || 0) + 1;
+            pStat.casa.pontosReais = (pStat.casa.pontosReais || 0) + atleta.pontuacao;
           } else {
-            pStat.fora.jogos += 1;
-            pStat.fora.pontos += atleta.pontuacao;
-            pStat.fora.sumSq += (atleta.pontuacao ** 2);
+            pStat.fora.jogos += decayWeight;
+            pStat.fora.pontos += weightedPts;
+            pStat.fora.sumSq += (weightedPts ** 2);
+            pStat.fora.jogosReais = (pStat.fora.jogosReais || 0) + 1;
+            pStat.fora.pontosReais = (pStat.fora.pontosReais || 0) + atleta.pontuacao;
           }
 
           // --- 3b. Accumulate Match Points for Teams ---
@@ -436,5 +600,23 @@ async function loadHistoricalDataFromFirestore(timeframe: Timeframe) {
     }
   }
 
-  return { playerStats, teamStats };
+  // Calculate Global League Averages (FDR base)
+  const globalLeagueAverages: Record<number, AggregatedStats> = {};
+  for (const teamId in teamStats) {
+    const stats = teamStats[teamId];
+    [stats.cedidosCasa, stats.cedidosFora].forEach(cat => {
+      for (const posStr in cat) {
+        const pos = parseInt(posStr, 10);
+        const st = cat[pos];
+        if (!globalLeagueAverages[pos]) {
+          globalLeagueAverages[pos] = { jogos: 0, pontos: 0, sumSq: 0, scouts: {} };
+        }
+        globalLeagueAverages[pos].jogos += st.jogos;
+        globalLeagueAverages[pos].pontos += st.pontos;
+        globalLeagueAverages[pos].sumSq += st.sumSq;
+      }
+    });
+  }
+
+  return { playerStats, teamStats, globalLeagueAverages };
 }

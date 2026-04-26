@@ -1,15 +1,8 @@
 'use client';
 
 import type { AtletaEnriquecido } from '@/types/cartola';
+import { POS_COLORS } from '@/lib/constants';
 
-const POS_COLORS: Record<number, string> = {
-  1: 'var(--color-goleiro)',
-  2: 'var(--color-lateral)',
-  3: 'var(--color-zagueiro)',
-  4: 'var(--color-meia)',
-  5: 'var(--color-atacante)',
-  6: 'var(--color-tecnico)',
-};
 
 export default function RankingCard({
   title,
@@ -54,6 +47,7 @@ export default function RankingCard({
                   case 'pontos_num': return a.pontos_num;
                   case 'variacao_num': return a.variacao_num;
                   case 'mediaComposta': return a.mediaComposta || 0;
+                  case 'previsaoIA': return a.previsaoIA || 0;
                   default: return 0;
                 }
               };

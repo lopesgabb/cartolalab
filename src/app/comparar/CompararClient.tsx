@@ -6,27 +6,12 @@ import type { AtletaEnriquecido, Clube } from '@/types/cartola';
 import { POSICAO_NAMES, type PosicaoId, STATUS_COLORS } from '@/types/cartola';
 import { calcularScoutPoints } from '@/lib/indicators';
 import { Search, X, Plus, Minus as MinusIcon } from 'lucide-react';
+import { POS_COLORS, SCOUT_LABELS } from '@/lib/constants';
 
 interface CompararClientProps {
   atletas: AtletaEnriquecido[];
   clubes: Record<string, Clube>;
 }
-
-const POS_COLORS: Record<number, string> = {
-  1: 'var(--color-goleiro)',
-  2: 'var(--color-lateral)',
-  3: 'var(--color-zagueiro)',
-  4: 'var(--color-meia)',
-  5: 'var(--color-atacante)',
-  6: 'var(--color-tecnico)',
-};
-
-const SCOUT_LABELS: Record<string, string> = {
-  G: 'Gol', A: 'Assist.', SG: 'S. Gol', DS: 'Desarme', FC: 'F. Comet.', FS: 'F. Sofr.',
-  FF: 'Fin. Fora', FD: 'Fin. Def.', FT: 'Fin. Trave', DE: 'Defesa', GS: 'Gol Sofr.',
-  CA: 'C. Amarelo', CV: 'C. Vermelho', PC: 'P. Comet.', PP: 'P. Perdido', PS: 'P. Sofr.',
-  I: 'Imped.', V: 'Vitória', DP: 'Def. Pênalti',
-};
 
 export default function CompararClient({ atletas, clubes }: CompararClientProps) {
   const [selected, setSelected] = useState<number[]>([]);

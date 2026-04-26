@@ -20,7 +20,7 @@ async function fetchWithCache<T>(endpoint: string, cacheDuration = CACHE_DURATIO
   }
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
-    next: { revalidate: 300 }, // Next.js ISR: revalidate every 5 min
+    cache: 'no-store', // Disable Next.js persistent fetch cache since we use our in-memory Map
   });
 
   if (!response.ok) {

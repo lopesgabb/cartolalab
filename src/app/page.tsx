@@ -2,6 +2,7 @@ import { CartolaAPI } from '@/lib/cartola-api';
 import { enrichAtletas, getTopPlayers } from '@/lib/indicators';
 import { computeAdvancedIndicators } from '@/lib/indicators-engine';
 import RankingCard from '@/components/RankingCard';
+import EmAlta from '@/components/EmAlta';
 
 export const revalidate = 300;
 
@@ -29,16 +30,23 @@ export default async function DashboardPage() {
   const { mercadoStatus, atletas } = await getData();
 
   const topMedia = getTopPlayers(atletas, 'media_num', 10, 2);
-  const topScore = getTopPlayers(atletas, 'mediaComposta', 10, 2);
+  const topScore = getTopPlayers(atletas, 'previsaoIA', 10, 2);
   const topRodada = getTopPlayers(atletas, 'pontos_num', 10, 1);
   const topValorizacao = getTopPlayers(atletas, 'variacao_num', 10, 1);
 
-  // Top 4 por posição usando o Score (M.COMP)
-  const topGoleiros = getTopPlayers(atletas.filter(a => a.posicao_id === 1), 'mediaComposta', 4, 1);
-  const topLaterais = getTopPlayers(atletas.filter(a => a.posicao_id === 2), 'mediaComposta', 4, 1);
-  const topZagueiros = getTopPlayers(atletas.filter(a => a.posicao_id === 3), 'mediaComposta', 4, 1);
-  const topMeias = getTopPlayers(atletas.filter(a => a.posicao_id === 4), 'mediaComposta', 4, 1);
-  const topAtacantes = getTopPlayers(atletas.filter(a => a.posicao_id === 5), 'mediaComposta', 4, 1);
+  // Top 4 por posição usando a Previsão IA
+  const topGoleiros = getTopPlayers(atletas.filter(a => a.posicao_id === 1), 'previsaoIA', 4, 1);
+  const topLaterais = getTopPlayers(atletas.filter(a => a.posicao_id === 2), 'previsaoIA', 4, 1);
+  const topZagueiros = getTopPlayers(atletas.filter(a => a.posicao_id === 3), 'previsaoIA', 4, 1);
+  const topMeias = getTopPlayers(atletas.filter(a => a.posicao_id === 4), 'previsaoIA', 4, 1);
+  const topAtacantes = getTopPlayers(atletas.filter(a => a.posicao_id === 5), 'previsaoIA', 4, 1);
+
+  // "Em Alta" — players with biggest (Momento - MediaGeral) delta
+  const emAlta = atletas
+    .filter(a => a.indiceMomento !== undefined && a.mediaGeralPeriodo !== undefined && a.jogos_num >= 2 && (a.lastRoundsHistory?.length ?? 0) >= 2)
+    .map(a => ({ ...a, deltaMomento: (a.indiceMomento ?? 0) - (a.mediaGeralPeriodo ?? 0) }))
+    .sort((a, b) => b.deltaMomento - a.deltaMomento)
+    .slice(0, 6);
 
   const mercadoAberto = mercadoStatus.status_mercado === 1;
   const fechamento = mercadoStatus.fechamento;
@@ -92,16 +100,25 @@ export default async function DashboardPage() {
       </div>
 
 
+      {/* Em Alta Section */}
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1rem', marginTop: '2rem' }} className="gradient-text">
+        🔥 Em Alta — Maior Momento
+      </h2>
+      <p style={{ color: 'var(--color-text-dim)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+        Jogadores com maior Índice de Momento nas últimas 3 rodadas vs. média histórica
+      </p>
+      <EmAlta atletas={emAlta} />
+
       {/* Top 4 Section */}
       <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', marginTop: '2rem' }} className="gradient-text">
-        🎯 Melhores Opções por Posição (Score)
+        🎯 Melhores Oportunidades por Posição (Previsão IA)
       </h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-        <RankingCard title="🧤 Goleiros" atletas={topGoleiros} metric="mediaComposta" metricLabel="SCORE" />
-        <RankingCard title="🛡️ Laterais" atletas={topLaterais} metric="mediaComposta" metricLabel="SCORE" />
-        <RankingCard title="🧱 Zagueiros" atletas={topZagueiros} metric="mediaComposta" metricLabel="SCORE" />
-        <RankingCard title="🪄 Meias" atletas={topMeias} metric="mediaComposta" metricLabel="SCORE" />
-        <RankingCard title="⚽ Atacantes" atletas={topAtacantes} metric="mediaComposta" metricLabel="SCORE" />
+        <RankingCard title="🧤 Goleiros" atletas={topGoleiros} metric="previsaoIA" metricLabel="IA SCORE" />
+        <RankingCard title="🛡️ Laterais" atletas={topLaterais} metric="previsaoIA" metricLabel="IA SCORE" />
+        <RankingCard title="🧱 Zagueiros" atletas={topZagueiros} metric="previsaoIA" metricLabel="IA SCORE" />
+        <RankingCard title="🪄 Meias" atletas={topMeias} metric="previsaoIA" metricLabel="IA SCORE" />
+        <RankingCard title="⚽ Atacantes" atletas={topAtacantes} metric="previsaoIA" metricLabel="IA SCORE" />
       </div>
 
       {/* Grid of tables */}
@@ -110,7 +127,7 @@ export default async function DashboardPage() {
       </h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 640px), 1fr))', gap: '1.5rem' }}>
         <RankingCard title="🏆 Top 10 — Melhores Médias" atletas={topMedia} metric="media_num" metricLabel="MG" />
-        <RankingCard title="💎 Top 10 — Melhores Opções (Score)" atletas={topScore} metric="mediaComposta" metricLabel="SCORE" />
+        <RankingCard title="💎 Top 10 — Previsões da IA" atletas={topScore} metric="previsaoIA" metricLabel="IA SCORE" />
         <RankingCard title="⚡ Top 10 — Última Rodada" atletas={topRodada} metric="pontos_num" metricLabel="PTS" />
         <RankingCard title="📈 Top 10 — Valorização" atletas={topValorizacao} metric="variacao_num" metricLabel="VAR" />
       </div>

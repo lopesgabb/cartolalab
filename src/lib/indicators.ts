@@ -136,7 +136,7 @@ export function filterAtletas(
  */
 export function getTopPlayers(
   atletas: AtletaEnriquecido[],
-  metric: 'media_num' | 'pontos_num' | 'custoBeneficio' | 'variacao_num' | 'mediaComposta',
+  metric: 'media_num' | 'pontos_num' | 'custoBeneficio' | 'variacao_num' | 'mediaComposta' | 'previsaoIA',
   n: number = 10,
   minGames: number = 1
 ): AtletaEnriquecido[] {

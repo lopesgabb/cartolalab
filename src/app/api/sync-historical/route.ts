@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, writeBatch } from 'firebase/firestore';
+import { clearCache } from '@/lib/indicators-engine';
+
+function authenticate(request: Request): NextResponse | null {
+  const secret = request.headers.get('x-api-secret');
+  if (!process.env.SYNC_API_SECRET || secret !== process.env.SYNC_API_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  return null;
+}
 
 export async function GET(request: Request) {
+  const authError = authenticate(request);
+  if (authError) return authError;
   const { searchParams } = new URL(request.url);
   const startParam = searchParams.get('start') || '1';
   const endParam = searchParams.get('end') || '5';
@@ -105,14 +116,17 @@ export async function GET(request: Request) {
       results.push({ round: r, status: 'success', athletes_saved: totalSavedAtletas, partidas_saved: totalSavedPartidas });
     }
 
+    // Invalidate in-memory indicator cache so the next request loads fresh data
+    clearCache();
     return NextResponse.json({ success: true, results });
   } catch (error: any) {
     console.error('Sync Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
 export async function DELETE(request: Request) {
+  const authError = authenticate(request);
+  if (authError) return authError;
   const { searchParams } = new URL(request.url);
   const round = searchParams.get('round');
   if (!round) return NextResponse.json({ error: 'Missing round param' }, { status: 400 });

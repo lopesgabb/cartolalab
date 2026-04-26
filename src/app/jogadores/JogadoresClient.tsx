@@ -8,6 +8,8 @@ import type { Timeframe } from '@/lib/indicators-engine';
 import { STATUS_COLORS, POSICAO_NAMES, type PosicaoId } from '@/types/cartola';
 import { filterAtletas, sortAtletas, calcularScoutPoints } from '@/lib/indicators';
 import { ChevronDown, ChevronUp, Search, X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { POS_COLORS, SCOUT_LABELS } from '@/lib/constants';
+import Sparkline from '@/components/Sparkline';
 
 interface JogadoresClientProps {
   atletas: AtletaEnriquecido[];
@@ -15,16 +17,7 @@ interface JogadoresClientProps {
   currentPeriod: Timeframe;
 }
 
-const POS_COLORS: Record<number, string> = {
-  1: 'var(--color-goleiro)',
-  2: 'var(--color-lateral)',
-  3: 'var(--color-zagueiro)',
-  4: 'var(--color-meia)',
-  5: 'var(--color-atacante)',
-  6: 'var(--color-tecnico)',
-};
-
-type SortField = 'media_num' | 'pontos_num' | 'preco_num' | 'variacao_num' | 'custoBeneficio' | 'jogos_num' | 'mediaGeralPeriodo' | 'mediaCasaPeriodo' | 'mediaForaPeriodo' | 'mediaConquistada' | 'desvioPadraoConquistada' | 'mediaCedida' | 'desvioPadraoCedida' | 'somaConqCed' | 'mccPersonalizado' | 'mediaComposta';
+type SortField = 'media_num' | 'pontos_num' | 'indiceMomento' | 'custoBeneficio' | 'jogos_num' | 'mediaGeralPeriodo' | 'mediaCasaPeriodo' | 'mediaForaPeriodo' | 'mediaConquistada' | 'mediaCedida' | 'somaConqCed' | 'mccPersonalizado' | 'mediaComposta' | 'previsaoIA' | 'somaRanks';
 
 export default function JogadoresClient({ atletas, clubes, currentPeriod }: JogadoresClientProps) {
   const [search, setSearch] = useState('');
@@ -46,13 +39,44 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
   };
 
   const filtered = useMemo(() => {
-    const result = filterAtletas(atletas, {
+    let result = filterAtletas(atletas, {
       posicaoId: posicaoFilter || undefined,
       clubeId: clubeFilter || undefined,
       statusId: statusFilter || undefined,
       jogosMin: minGames,
       search: search || undefined,
     });
+
+    const sortByFieldDesc = (arr: AtletaEnriquecido[], field: string) => {
+      return [...arr].sort((a, b) => ((b as any)[field] || 0) - ((a as any)[field] || 0));
+    };
+
+    const sortByPrevisao = sortByFieldDesc(result, 'previsaoIA');
+    const sortByMComp = sortByFieldDesc(result, 'mediaComposta');
+    const sortByMgp = sortByFieldDesc(result, 'mediaGeralPeriodo');
+
+    const sortByMando = [...result].sort((a, b) => {
+      const valA = a.proximoJogoMando === 'casa' ? (a.mediaCasaPeriodo || 0) : a.proximoJogoMando === 'fora' ? (a.mediaForaPeriodo || 0) : (a.mediaGeralPeriodo || 0);
+      const valB = b.proximoJogoMando === 'casa' ? (b.mediaCasaPeriodo || 0) : b.proximoJogoMando === 'fora' ? (b.mediaForaPeriodo || 0) : (b.mediaGeralPeriodo || 0);
+      return valB - valA;
+    });
+
+    const rankPrevisao = new Map(sortByPrevisao.map((a, i) => [a.atleta_id, i + 1]));
+    const rankMComp = new Map(sortByMComp.map((a, i) => [a.atleta_id, i + 1]));
+    const rankMgp = new Map(sortByMgp.map((a, i) => [a.atleta_id, i + 1]));
+    const rankMando = new Map(sortByMando.map((a, i) => [a.atleta_id, i + 1]));
+
+    result = result.map(a => {
+      const pRank = rankPrevisao.get(a.atleta_id) || 0;
+      const cRank = rankMComp.get(a.atleta_id) || 0;
+      const gRank = rankMgp.get(a.atleta_id) || 0;
+      const mandoRank = rankMando.get(a.atleta_id) || 0;
+      return {
+        ...a,
+        somaRanks: pRank + cRank + gRank + mandoRank,
+      };
+    });
+
     return sortAtletas(result, sortField, sortDir);
   }, [atletas, search, posicaoFilter, clubeFilter, statusFilter, sortField, sortDir, minGames]);
 
@@ -61,7 +85,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
       setSortDir(sortDir === 'desc' ? 'asc' : 'desc');
     } else {
       setSortField(field);
-      setSortDir('desc');
+      setSortDir(field === 'somaRanks' ? 'asc' : 'desc');
     }
   };
 
@@ -257,15 +281,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                     M.CONQ <SortIcon field="mediaConquistada" />
                   </span>
                 </th>
-                <th
-                  className={`table-header ${sortField === 'desvioPadraoConquistada' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
-                  onClick={() => handleSort('desvioPadraoConquistada')}
-                >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-text-secondary)' }} title="Desvio Padrão da M.CONQ, indicando variabilidade">
-                    DP.C <SortIcon field="desvioPadraoConquistada" />
-                  </span>
-                </th>
+
                 <th
                   className={`table-header ${sortField === 'mediaCedida' ? 'active' : ''}`}
                   style={{ textAlign: 'right', cursor: 'pointer' }}
@@ -273,15 +289,6 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-negative)' }} title="Média de pontos cedidos pelo ADVERSÁRIO para esta posição no Período">
                     M.CED <SortIcon field="mediaCedida" />
-                  </span>
-                </th>
-                <th
-                  className={`table-header ${sortField === 'desvioPadraoCedida' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
-                  onClick={() => handleSort('desvioPadraoCedida')}
-                >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-text-secondary)' }} title="Desvio Padrão da M.CED, indicando previsibilidade">
-                    DP.E <SortIcon field="desvioPadraoCedida" />
                   </span>
                 </th>
                 <th
@@ -294,39 +301,39 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'mccPersonalizado' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
-                  onClick={() => handleSort('mccPersonalizado')}
-                >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-goleiro)' }} title="Média entre a Média do Jogador (Casa/Fora) e M.CED">
-                    MCC <SortIcon field="mccPersonalizado" />
-                  </span>
-                </th>
-                <th
                   className={`table-header ${sortField === 'mediaComposta' ? 'active' : ''}`}
                   style={{ textAlign: 'right', cursor: 'pointer' }}
                   onClick={() => handleSort('mediaComposta')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-text-primary)' }} title="Média Composta (M.CONQ + M.CED + MC/MF) / 3">
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-text-primary)' }} title="Média Composta Antiga">
                     M.COMP <SortIcon field="mediaComposta" />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'preco_num' ? 'active' : ''}`}
+                  className={`table-header ${sortField === 'previsaoIA' ? 'active' : ''}`}
                   style={{ textAlign: 'right', cursor: 'pointer' }}
-                  onClick={() => handleSort('preco_num')}
+                  onClick={() => handleSort('previsaoIA')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                    Preço <SortIcon field="preco_num" />
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-accent)' }} title="Previsão da IA cruzando scouts">
+                    IA SCORE <SortIcon field="previsaoIA" />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'variacao_num' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', paddingRight: '1rem', cursor: 'pointer' }}
-                  onClick={() => handleSort('variacao_num')}
+                  className={`table-header ${sortField === 'somaRanks' ? 'active' : ''}`}
+                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  onClick={() => handleSort('somaRanks')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                    Var <SortIcon field="variacao_num" />
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-info)' }} title="Soma das posições (IA SCORE + M.COMP + MG(p) + M.MANDO), menor é melhor">
+                    SOMA POS <SortIcon field="somaRanks" />
+                  </span>
+                </th>
+                <th
+                  className={`table-header ${sortField === 'indiceMomento' ? 'active' : ''}`}
+                  style={{ textAlign: 'right', paddingRight: '1rem', cursor: 'pointer' }}
+                  onClick={() => handleSort('indiceMomento')}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Momento: Avaliação do desempenho recente nas últimas 3 rodadas">
+                    Momento <SortIcon field="indiceMomento" />
                   </span>
                 </th>
               </tr>
@@ -415,35 +422,31 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
         <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-positive)', fontWeight: 600 }}>
           {a.mediaConquistada?.toFixed(2) || '0.00'}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-text-dim)', fontSize: '0.8rem' }}>
-          ±{a.desvioPadraoConquistada?.toFixed(2) || '0.00'}
-        </td>
+
         <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-negative)', fontWeight: 600 }}>
           {a.mediaCedida?.toFixed(2) || '0.00'}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-text-dim)', fontSize: '0.8rem' }}>
-          ±{a.desvioPadraoCedida?.toFixed(2) || '0.00'}
-        </td>
+
         <td className="table-cell" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-text-primary)' }}>
           {a.somaConqCed?.toFixed(2) || '0.00'}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 800, color: 'var(--color-goleiro)', background: 'rgba(0,0,0,0.1)' }}>
-          {a.mccPersonalizado?.toFixed(2) || '0.00'}
-        </td>
-        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 800, color: 'var(--color-text-primary)', background: 'rgba(255,255,255,0.03)' }}>
+        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 800, color: 'var(--color-text-primary)' }}>
           {a.mediaComposta?.toFixed(2) || '0.00'}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', paddingRight: '1rem' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: varColor, fontWeight: 600, fontSize: '0.8rem' }}>
-            <VarIcon size={12} />
-            {variacao > 0 ? '+' : ''}{variacao.toFixed(2)}
-          </span>
+        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 800, color: 'var(--color-accent)', background: 'rgba(255,255,255,0.03)' }}>
+          {a.previsaoIA?.toFixed(2) || '0.00'}
+        </td>
+        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-info)' }}>
+          {a.somaRanks || 0}
+        </td>
+        <td className="table-cell" style={{ textAlign: 'right', paddingRight: '1rem', fontWeight: 600, color: 'var(--color-info)' }}>
+          {a.indiceMomento?.toFixed(2) || '0.00'}
         </td>
       </tr>
       <AnimatePresence>
         {isExpanded && (
           <tr>
-            <td colSpan={19} style={{ padding: 0 }}>
+            <td colSpan={17} style={{ padding: 0 }}>
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
@@ -461,74 +464,145 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
   );
 }
 
-function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
-  const { scoutsConquistados, scoutsCedidos } = atleta;
+/** Converts raw round scores into cumulative averages per round */
+function toRunningAvg(scores: number[]): number[] {
+  let sum = 0;
+  return scores.map((v, i) => { sum += v; return sum / (i + 1); });
+}
 
-  const SCOUT_LABELS: Record<string, string> = {
-    G: 'Gol', A: 'Assist.', SG: 'S. Gol', DS: 'Desarme', FC: 'F. Comet.', FS: 'F. Sofr.',
-    FF: 'Fin. Fora', FD: 'Fin. Def.', FT: 'Fin. Trave', DE: 'Defesa', GS: 'Gol Sofr.',
-    CA: 'C. Amarelo', CV: 'C. Vermelho', PC: 'P. Comet.', PP: 'P. Perdido', PS: 'P. Sofr.',
-    I: 'Imped.', V: 'Vitória', DP: 'Def. Pênalti',
-  };
+function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
+  const { scoutsPlayer, scoutsAdversario, proximoJogoMando } = atleta;
 
   const NEGATIVE_SCOUTS = ['FC', 'GS', 'CA', 'CV', 'PC', 'PP', 'I'];
   const isScoutPositive = (key: string) => !NEGATIVE_SCOUTS.includes(key);
 
-  const renderScoutTag = (key: string, value: string | number, isPositive: boolean, suffix: string = '') => {
-    return (
-      <div
-        key={key}
-        style={{
-          display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'space-between',
-          background: isPositive ? 'rgba(0, 255, 136, 0.08)' : 'rgba(255, 77, 106, 0.08)',
-          border: `1.5px solid ${isPositive ? 'rgba(0, 255, 136, 0.2)' : 'rgba(255, 77, 106, 0.2)'}`,
-          padding: '0.375rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', flex: '1 1 45%',
-        }}
-      >
-        <span style={{ color: 'var(--color-text-secondary)', fontWeight: 600 }}>{SCOUT_LABELS[key] || key}</span>
-        <span style={{ fontWeight: 800, color: 'var(--color-text-primary)' }}>
-          {value}{suffix}
-        </span>
-      </div>
-    );
-  };
+  const allScoutKeys = new Set<string>();
+  if (scoutsPlayer?.total) Object.keys(scoutsPlayer.total).forEach(k => allScoutKeys.add(k));
+  if (scoutsAdversario?.total) Object.keys(scoutsAdversario.total).forEach(k => allScoutKeys.add(k));
+
+  const keysArray = Array.from(allScoutKeys).sort((a, b) => {
+    const aPts = scoutsPlayer?.total[a as keyof Scout]?.media || 0;
+    const bPts = scoutsPlayer?.total[b as keyof Scout]?.media || 0;
+    return bPts - aPts;
+  });
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', padding: '1.5rem', background: 'var(--color-bg-secondary)', borderBottom: '2px solid var(--color-border)' }}>
-      {/* Coluna 1: Scouts Pessoais do Jogador */}
-      <div style={{ background: 'var(--color-bg-primary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-dim)', letterSpacing: '0.05em' }}>M. CONQUISTADA (NO MANDO)</span>
-          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: (atleta.mediaConquistada || 0) >= 0 ? 'var(--color-positive)' : 'var(--color-negative)' }}>
-            ±{atleta.desvioPadraoConquistada?.toFixed(2) || '0.00'} pts
-          </span>
-        </div>
-        {(!scoutsConquistados || Object.keys(scoutsConquistados).length === 0) ? (
-          <div style={{ color: 'var(--color-text-dim)', fontSize: '0.85rem', textAlign: 'center', padding: '2rem' }}>Sem scouts registrados neste cenário.</div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
-            {Object.entries(scoutsConquistados)
-              .sort((a, b) => b[1].media - a[1].media)
-              .map(([key, stat]) => renderScoutTag(key, stat.media.toFixed(2), isScoutPositive(key), ''))}
+    <div style={{ padding: '1.5rem', background: 'var(--color-bg-secondary)', borderBottom: '2px solid var(--color-border)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '1.5rem' }}>
+        
+        {/* Left Side: Scout Matrix Table */}
+        <div style={{ background: 'var(--color-bg-primary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflowX: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-dim)', letterSpacing: '0.05em' }}>
+              CRUZAMENTO DE SCOUTS (PREVISÃO VS ADVERSÁRIO)
+            </span>
           </div>
-        )}
-      </div>
 
-      {/* Coluna 2: Índices Cedidos */}
-      <div style={{ background: 'var(--color-bg-primary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-dim)', letterSpacing: '0.05em' }}>M. CEDIDA (PRÓX. ADV.)</span>
-          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--color-negative)' }}>
-            ±{atleta.desvioPadraoCedida?.toFixed(2) || '0.00'} pts
-          </span>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+            <thead>
+              <tr style={{ background: 'var(--color-bg-hover)', borderBottom: '1px solid var(--color-border)' }}>
+                <th style={{ textAlign: 'left', padding: '0.75rem', fontWeight: 600, color: 'var(--color-text-dim)' }}>Scout</th>
+                <th style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 600, color: 'var(--color-text-dim)' }}>Jogador (Total)</th>
+                <th style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 600, color: 'var(--color-text-dim)' }}>Adv. Cede (Total)</th>
+                {proximoJogoMando && (
+                  <>
+                    <th style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 600, color: 'var(--color-text-dim)' }}>Jog. ({proximoJogoMando === 'casa' ? 'C' : 'F'})</th>
+                    <th style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 600, color: 'var(--color-text-dim)' }}>Adv. Cede ({proximoJogoMando === 'casa' ? 'F' : 'C'})</th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {keysArray.map(key => {
+                const sKey = key as keyof Scout;
+                const pTotal = scoutsPlayer?.total[sKey];
+                const pMando = proximoJogoMando ? scoutsPlayer?.[proximoJogoMando]?.[sKey] : undefined;
+                const aTotal = scoutsAdversario?.total[sKey];
+                const oppMandoEstado = proximoJogoMando === 'casa' ? 'fora' : proximoJogoMando === 'fora' ? 'casa' : undefined;
+                const aMando = oppMandoEstado ? scoutsAdversario?.[oppMandoEstado]?.[sKey] : undefined;
+                
+                const isPositive = isScoutPositive(key);
+                const highlightP = isPositive && aTotal && pTotal && (aTotal.media > pTotal.media);
+
+                return (
+                  <tr key={key} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background 0.2s' }}
+                      onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-bg-hover)'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                    <td style={{ padding: '0.75rem', fontWeight: 600, color: isPositive ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>
+                      {SCOUT_LABELS[sKey] || key}
+                    </td>
+                    <td style={{ padding: '0.75rem', textAlign: 'right', color: pTotal ? 'var(--color-text-primary)' : 'var(--color-text-dim)' }}>
+                      {pTotal ? pTotal.media.toFixed(2) : '-'}
+                    </td>
+                    <td style={{ padding: '0.75rem', textAlign: 'right', color: aTotal ? 'var(--color-text-primary)' : 'var(--color-text-dim)', fontWeight: highlightP ? 700 : 400 }}>
+                      {aTotal ? aTotal.media.toFixed(2) : '-'}
+                      {highlightP && <span title="Adversário cede mais do que a média deste jogador" style={{ color: 'var(--color-positive)', fontSize: '10px', marginLeft: '4px' }}>▲</span>}
+                    </td>
+                    {proximoJogoMando && (
+                      <>
+                        <td style={{ padding: '0.75rem', textAlign: 'right', color: pMando ? 'var(--color-text-primary)' : 'var(--color-text-dim)', background: 'rgba(255,255,255,0.015)' }}>
+                          {pMando ? pMando.media.toFixed(2) : '-'}
+                        </td>
+                        <td style={{ padding: '0.75rem', textAlign: 'right', color: aMando ? 'var(--color-text-primary)' : 'var(--color-text-dim)', background: 'rgba(255,255,255,0.015)' }}>
+                          {aMando ? aMando.media.toFixed(2) : '-'}
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                );
+              })}
+              {keysArray.length === 0 && (
+                <tr>
+                  <td colSpan={proximoJogoMando ? 5 : 3} style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-text-dim)' }}>
+                    Faltam dados de histórico neste recorte.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-        {(!scoutsCedidos || Object.keys(scoutsCedidos).length === 0) ? (
-          <div style={{ color: 'var(--color-text-dim)', fontSize: '0.85rem', textAlign: 'center', padding: '2rem' }}>Sem dados cedidos neste cenário.</div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
-             {Object.entries(scoutsCedidos)
-              .sort((a, b) => b[1].media - a[1].media)
-              .map(([key, stat]) => renderScoutTag(key, stat.media.toFixed(2), isScoutPositive(key), ''))}
+
+        {/* Right Side: Evolução por Rodada (Sparkline) */}
+        {atleta.lastRoundsHistory && atleta.lastRoundsHistory.length > 0 && (
+          <div style={{ background: 'var(--color-bg-primary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-dim)', letterSpacing: '0.05em' }}>EVOLUÇÃO POR RODADA</span>
+              {atleta.indiceMomento !== undefined && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)', fontWeight: 600 }}>MOMENTO</span>
+                  <span style={{
+                    fontWeight: 800, fontSize: '0.9rem',
+                    color: atleta.indiceMomento > (atleta.mediaGeralPeriodo ?? 0) ? 'var(--color-positive)' : 'var(--color-negative)',
+                  }}>
+                    {atleta.indiceMomento.toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <Sparkline
+              data={toRunningAvg(atleta.lastRoundsHistory)}
+              width={240}
+              height={80}
+              showDots
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--color-text-dim)' }}>
+              <span>Rd. {1}</span>
+              <span>Rd. {atleta.lastRoundsHistory.length}</span>
+            </div>
+            <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <div style={{ background: 'var(--color-bg-hover)', borderRadius: '8px', padding: '0.625rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dim)', fontWeight: 600 }}>MELHOR</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-positive)' }}>
+                  {Math.max(...atleta.lastRoundsHistory).toFixed(1)}
+                </div>
+              </div>
+              <div style={{ background: 'var(--color-bg-hover)', borderRadius: '8px', padding: '0.625rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dim)', fontWeight: 600 }}>PIOR</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-negative)' }}>
+                  {Math.min(...atleta.lastRoundsHistory).toFixed(1)}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

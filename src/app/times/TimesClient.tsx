@@ -2,6 +2,7 @@
 
 import type { Clube } from '@/types/cartola';
 import { POSICAO_NAMES, type PosicaoId } from '@/types/cartola';
+import { POS_COLORS } from '@/lib/constants';
 
 export interface TeamStats {
   clube: Clube;
@@ -10,15 +11,6 @@ export interface TeamStats {
   porPosicao: Record<number, { media: number; total: number; count: number }>;
   mediaGeral: number;
 }
-
-const POS_COLORS: Record<number, string> = {
-  1: 'var(--color-goleiro)',
-  2: 'var(--color-lateral)',
-  3: 'var(--color-zagueiro)',
-  4: 'var(--color-meia)',
-  5: 'var(--color-atacante)',
-  6: 'var(--color-tecnico)',
-};
 
 export default function TimesClient({ teamStats }: { teamStats: TeamStats[] }) {
   return (

@@ -181,6 +181,17 @@ export interface PontuadosResponse {
 // Computed / UI Types
 // ============================================
 
+export interface ScoutStatsObj {
+  media: number;
+  desvioPadrao: number;
+}
+
+export interface ScoutContextStats {
+  total: Partial<Record<keyof Scout, ScoutStatsObj>>;
+  casa: Partial<Record<keyof Scout, ScoutStatsObj>>;
+  fora: Partial<Record<keyof Scout, ScoutStatsObj>>;
+}
+
 export interface AtletaEnriquecido extends Atleta {
   clube: Clube;
   posicao: Posicao;
@@ -204,10 +215,25 @@ export interface AtletaEnriquecido extends Atleta {
   somaConqCed?: number;
   mccPersonalizado?: number;
   mediaComposta?: number;
+  somaRanks?: number;
   
-  // Detailed Scout Indicators
+  // Detailed Scout Indicators (New format)
+  scoutsPlayer?: ScoutContextStats;
+  scoutsAdversario?: ScoutContextStats;
+
+  // Detailed Scout Indicators (Legacy format, kept for compatibility if needed)
   scoutsConquistados?: Partial<Record<keyof Scout, { media: number; desvioPadrao: number }>>;
   scoutsCedidos?: Partial<Record<keyof Scout, { media: number; desvioPadrao: number }>>;
+
+  // Match Context
+  proximoJogoMando?: 'casa' | 'fora';
+
+  // Phase 3: Momento & Sparkline
+  indiceMomento?: number;       // Weighted avg of last 3 rounds (most recent = highest weight)
+  lastRoundsHistory?: number[]; // Raw per-round scores for sparkline chart (ascending)
+
+  // Previsão IA: Algoritmo combinado de scouts (70% mando, 30% geral) cruzado com o adversário
+  previsaoIA?: number;
 }
 
 export type PosicaoId = 1 | 2 | 3 | 4 | 5 | 6;
