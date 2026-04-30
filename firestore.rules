@@ -3,14 +3,9 @@ rules_version='2'
 service cloud.firestore {
   match /databases/{database}/documents {
     // Dados de rodadas: leitura pública, escrita bloqueada (apenas via Admin SDK / API routes)
-    match /rodadas/{rodadaId} {
+    match /rodadas/{round}/{document=**} {
       allow read: if true;
-      allow write: if false;
-
-      match /{subcollection}/{docId} {
-        allow read: if true;
-        allow write: if false;
-      }
+      allow write: if false; // Re-lock after sync
     }
 
     // Bloqueia tudo que não for rodadas

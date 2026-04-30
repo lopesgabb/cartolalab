@@ -2,24 +2,55 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { clearCache } from '@/lib/indicators-engine';
+import { log } from '@/lib/logger';
+
+// Simple rate limiting: track last sync time
+let lastSyncTimestamp = 0;
+const MIN_SYNC_INTERVAL_MS = 30_000; // 30 seconds between syncs
 
 function authenticate(request: Request): NextResponse | null {
   const secret = request.headers.get('x-api-secret');
   if (!process.env.SYNC_API_SECRET || secret !== process.env.SYNC_API_SECRET) {
+    log('warn', 'sync-historical', 'Unauthorized sync attempt', {
+      ip: request.headers.get('x-forwarded-for') || 'unknown',
+    });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   return null;
 }
 
-export async function GET(request: Request) {
+/**
+ * POST /api/sync-historical
+ * Body: { start: number, end: number }
+ * 
+ * Write operations MUST use POST, never GET.
+ * GET with side-effects violates HTTP semantics and is vulnerable to
+ * accidental triggers by crawlers, pre-fetchers, and cache proxies.
+ */
+export async function POST(request: Request) {
   const authError = authenticate(request);
   if (authError) return authError;
-  const { searchParams } = new URL(request.url);
-  const startParam = searchParams.get('start') || '1';
-  const endParam = searchParams.get('end') || '5';
-  
-  const start = parseInt(startParam, 10);
-  const end = parseInt(endParam, 10);
+
+  // Rate limiting
+  const now = Date.now();
+  if (now - lastSyncTimestamp < MIN_SYNC_INTERVAL_MS) {
+    return NextResponse.json(
+      { error: 'Rate limited. Please wait before syncing again.' },
+      { status: 429 }
+    );
+  }
+  lastSyncTimestamp = now;
+
+  let start: number;
+  let end: number;
+
+  try {
+    const body = await request.json();
+    start = parseInt(String(body.start), 10);
+    end = parseInt(String(body.end), 10);
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body. Expected { start, end }' }, { status: 400 });
+  }
 
   if (isNaN(start) || isNaN(end) || start > end || start < 1) {
     return NextResponse.json({ error: 'Invalid range' }, { status: 400 });
@@ -33,7 +64,7 @@ export async function GET(request: Request) {
     const currentRound = mercadoStatus.rodada_atual;
 
     for (let r = start; r <= end; r++) {
-      console.log(`Fetching round ${r}...`);
+      log('info', 'sync-historical', `Fetching round ${r}`, { currentRound });
       
       const atletasUrl = r === currentRound 
         ? 'https://api.cartola.globo.com/atletas/pontuados'
@@ -45,7 +76,7 @@ export async function GET(request: Request) {
       ]);
 
       if (!responseAtletas.ok) {
-        console.error(`Failed to fetch atletas for round ${r}: ${responseAtletas.status}`);
+        log('error', 'sync-historical', `Failed to fetch atletas for round ${r}`, { status: responseAtletas.status });
         results.push({ round: r, status: 'error', type: 'atletas', code: responseAtletas.status });
         continue;
       }
@@ -54,7 +85,7 @@ export async function GET(request: Request) {
       const dataPartidas = responsePartidas.ok ? await responsePartidas.json() : null;
       
       if (!dataAtletas.atletas || Object.keys(dataAtletas.atletas).length === 0) {
-        console.warn(`No athletes found for round ${r}. Skipping.`);
+        log('warn', 'sync-historical', `No athletes found for round ${r}. Skipping.`);
         results.push({ round: r, status: 'skipped (no data)' });
         continue;
       }
@@ -69,13 +100,11 @@ export async function GET(request: Request) {
       const atletasEntries = Object.entries(dataAtletas.atletas);
       
       for (const [id, atletaData] of atletasEntries) {
-        // Path: rodadas/{rodadaId}/atletas/{atletaId}
         const docRef = doc(db, 'rodadas', String(r), 'atletas', id);
-        batch.set(docRef, atletaData as any, { merge: true });
+        batch.set(docRef, atletaData as Record<string, unknown>, { merge: true });
         opCount++;
         totalSavedAtletas++;
 
-        // Firestore batches support up to 500 operations
         if (opCount >= 490) {
           await batch.commit();
           batch = writeBatch(db);
@@ -112,18 +141,34 @@ export async function GET(request: Request) {
          }, { merge: true });
       }
 
-      console.log(`Saved ${totalSavedAtletas} athletes and ${totalSavedPartidas} matches for round ${r}.`);
+      log('info', 'sync-historical', `Saved round ${r}`, { totalSavedAtletas, totalSavedPartidas });
       results.push({ round: r, status: 'success', athletes_saved: totalSavedAtletas, partidas_saved: totalSavedPartidas });
     }
 
     // Invalidate in-memory indicator cache so the next request loads fresh data
     clearCache();
     return NextResponse.json({ success: true, results });
-  } catch (error: any) {
-    console.error('Sync Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    log('error', 'sync-historical', 'Sync failed', { error: message });
+    // Never expose internal error details in production
+    const safeMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal sync error. Check server logs.'
+      : message;
+    return NextResponse.json({ error: safeMessage }, { status: 500 });
   }
 }
+
+// Keep GET as a redirect hint so old curl commands get a helpful message
+export async function GET() {
+  return NextResponse.json(
+    { 
+      error: 'This endpoint now requires POST. Use: curl -X POST -H "Content-Type: application/json" -H "x-api-secret: YOUR_SECRET" -d \'{"start":1,"end":13}\' http://localhost:3000/api/sync-historical' 
+    },
+    { status: 405 }
+  );
+}
+
 export async function DELETE(request: Request) {
   const authError = authenticate(request);
   if (authError) return authError;
@@ -153,8 +198,14 @@ export async function DELETE(request: Request) {
     });
     if (opCount > 0) await batch.commit();
 
+    log('info', 'sync-historical', `Round ${round} data cleared`);
     return NextResponse.json({ success: true, message: `Round ${round} data cleared` });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    log('error', 'sync-historical', 'Delete failed', { error: message });
+    const safeMessage = process.env.NODE_ENV === 'production'
+      ? 'Internal error. Check server logs.'
+      : message;
+    return NextResponse.json({ error: safeMessage }, { status: 500 });
   }
 }

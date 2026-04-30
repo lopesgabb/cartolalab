@@ -51,7 +51,7 @@ export default function GlobalError({
             fontFamily: 'monospace',
           }}
         >
-          {error.message}
+          {process.env.NODE_ENV !== 'production' ? error.message : 'Erro interno do servidor.'}
         </p>
         <button className="btn-primary" onClick={() => reset()}>
           Tentar Novamente
