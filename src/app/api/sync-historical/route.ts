@@ -1,45 +1,38 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, writeBatch } from 'firebase/firestore';
-import { clearCache } from '@/lib/indicators-engine';
+import { doc, setDoc, writeBatch, getDocs, collection } from 'firebase/firestore';
 import { log } from '@/lib/logger';
-
-// Simple rate limiting: track last sync time
-let lastSyncTimestamp = 0;
-const MIN_SYNC_INTERVAL_MS = 30_000; // 30 seconds between syncs
+import { calculateHistoricalAggregates } from '@/lib/domain/aggregation';
+import crypto from 'crypto';
 
 function authenticate(request: Request): NextResponse | null {
   const secret = request.headers.get('x-api-secret');
-  if (!process.env.SYNC_API_SECRET || secret !== process.env.SYNC_API_SECRET) {
-    log('warn', 'sync-historical', 'Unauthorized sync attempt', {
+  const expectedSecret = process.env.SYNC_API_SECRET;
+  
+  if (!expectedSecret || !secret) {
+    log('warn', 'sync-historical', 'Unauthorized sync attempt (missing secret)', {
       ip: request.headers.get('x-forwarded-for') || 'unknown',
     });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Use timingSafeEqual to prevent timing attacks
+  const expectedBuffer = Buffer.from(expectedSecret);
+  const secretBuffer = Buffer.from(secret);
+  
+  if (expectedBuffer.length !== secretBuffer.length || !crypto.timingSafeEqual(expectedBuffer, secretBuffer)) {
+    log('warn', 'sync-historical', 'Unauthorized sync attempt (invalid secret)', {
+      ip: request.headers.get('x-forwarded-for') || 'unknown',
+    });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   return null;
 }
 
-/**
- * POST /api/sync-historical
- * Body: { start: number, end: number }
- * 
- * Write operations MUST use POST, never GET.
- * GET with side-effects violates HTTP semantics and is vulnerable to
- * accidental triggers by crawlers, pre-fetchers, and cache proxies.
- */
 export async function POST(request: Request) {
   const authError = authenticate(request);
   if (authError) return authError;
-
-  // Rate limiting
-  const now = Date.now();
-  if (now - lastSyncTimestamp < MIN_SYNC_INTERVAL_MS) {
-    return NextResponse.json(
-      { error: 'Rate limited. Please wait before syncing again.' },
-      { status: 429 }
-    );
-  }
-  lastSyncTimestamp = now;
 
   let start: number;
   let end: number;
@@ -145,9 +138,23 @@ export async function POST(request: Request) {
       results.push({ round: r, status: 'success', athletes_saved: totalSavedAtletas, partidas_saved: totalSavedPartidas });
     }
 
-    // Invalidate in-memory indicator cache so the next request loads fresh data
-    clearCache();
-    return NextResponse.json({ success: true, results });
+    // After all raw data is synced, compute and store the CQRS aggregated statistics
+    log('info', 'sync-historical', 'Computing CQRS aggregates...');
+    const [agg3, agg5, aggAll] = await Promise.all([
+      calculateHistoricalAggregates('3'),
+      calculateHistoricalAggregates('5'),
+      calculateHistoricalAggregates('all')
+    ]);
+
+    await setDoc(doc(db, 'system', 'aggregatedStats'), {
+      '3': agg3,
+      '5': agg5,
+      'all': aggAll,
+      updatedAt: new Date().toISOString()
+    });
+    log('info', 'sync-historical', 'CQRS aggregates saved successfully.');
+
+    return NextResponse.json({ success: true, results, aggregated: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     log('error', 'sync-historical', 'Sync failed', { error: message });
@@ -159,7 +166,6 @@ export async function POST(request: Request) {
   }
 }
 
-// Keep GET as a redirect hint so old curl commands get a helpful message
 export async function GET() {
   return NextResponse.json(
     { 
@@ -177,7 +183,6 @@ export async function DELETE(request: Request) {
   if (!round) return NextResponse.json({ error: 'Missing round param' }, { status: 400 });
   
   try {
-    const { collection, getDocs } = await import('firebase/firestore');
     // Delete atletas
     const atletasSnap = await getDocs(collection(db, 'rodadas', round, 'atletas'));
     let batch = writeBatch(db);

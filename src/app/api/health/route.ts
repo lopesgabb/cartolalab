@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, limit, query } from 'firebase/firestore';
-import { getCacheStatus } from '@/lib/indicators-engine';
-
 /**
  * GET /api/health
  * Public health check endpoint for monitoring.
@@ -36,10 +34,6 @@ export async function GET() {
     // This is expected in some environments (restricted DNS)
     if (overallStatus === 'ok') overallStatus = 'degraded';
   }
-
-  // Cache status
-  const cache = getCacheStatus();
-  checks.indicatorCache = `${cache.size} entries, TTL ${cache.ttlMinutes}min`;
 
   return NextResponse.json({
     status: overallStatus,

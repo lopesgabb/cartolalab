@@ -8,7 +8,13 @@ service cloud.firestore {
       allow write: if false; // Re-lock after sync
     }
 
-    // Bloqueia tudo que não for rodadas
+    // Dados agregados do sistema (CQRS): leitura pública, escrita bloqueada
+    match /system/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Bloqueia tudo que não for explicitamente permitido
     match /{document=**} {
       allow read, write: if false;
     }
