@@ -34,6 +34,13 @@
   --shadow-hard: 4px 4px 0px rgba(0, 255, 136, 0.2);
   --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.3);
   --shadow-glow: 0 0 20px rgba(0, 255, 136, 0.1);
+
+  --color-bg-deep: #0A0F1A;
+  --color-glass-bg: rgba(255, 255, 255, 0.03);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+  --color-accent-gold: #FFB800;
+
+  --shadow-premium: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 @layer base {
@@ -74,6 +81,20 @@
 }
 
 @layer components {
+  .glass-panel {
+    background: var(--color-glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--color-glass-border);
+    border-radius: 16px;
+  }
+
+  .table-pro-container {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-glass-border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
   .card {
     background: var(--color-bg-card);
     border: 2px solid var(--color-border);
