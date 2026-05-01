@@ -7,7 +7,7 @@ import type { AtletaEnriquecido, Clube, Scout } from '@/types/cartola';
 import type { Timeframe } from '@/lib/indicators-engine';
 import { STATUS_COLORS, POSICAO_NAMES, type PosicaoId } from '@/types/cartola';
 import { filterAtletas, sortAtletas, calcularScoutPoints } from '@/lib/indicators';
-import { ChevronDown, ChevronUp, Search, X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { POS_COLORS, SCOUT_LABELS } from '@/lib/constants';
 import Sparkline from '@/components/Sparkline';
 
@@ -209,15 +209,28 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
       </div>
 
       {/* Data Table */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1600px' }}>
+      <div className="table-pro-container" style={{ position: 'relative' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1600px', fontVariantNumeric: 'tabular-nums' }}>
             <thead>
-              <tr style={{ background: 'var(--color-bg-secondary)' }}>
+              <tr style={{ 
+                background: 'rgba(255,255,255,0.02)', 
+                borderBottom: '1px solid var(--color-glass-border)',
+                position: 'sticky',
+                top: 0,
+                backdropFilter: 'blur(10px)',
+                zIndex: 30
+              }}>
                 <th className="table-header" style={{ textAlign: 'left', paddingLeft: '1rem', width: '40px' }}>#</th>
-                <th className="table-header" style={{ textAlign: 'left', minWidth: '180px' }}>Jogador</th>
+                <th className="table-header" style={{ 
+                  textAlign: 'left', 
+                  minWidth: '200px',
+                  position: 'sticky',
+                  left: 0,
+                  background: 'var(--color-bg-secondary)',
+                  zIndex: 31
+                }}>Atleta</th>
                 <th className="table-header" style={{ textAlign: 'center' }}>Pos</th>
-                <th className="table-header" style={{ textAlign: 'center' }}>Status</th>
                 <th
                   className={`table-header ${sortField === 'jogos_num' ? 'active' : ''}`}
                   style={{ textAlign: 'right', cursor: 'pointer' }}
@@ -260,7 +273,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('mediaCasaPeriodo')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Média em Casa no Período">
-                    M.Casa <SortIcon field="mediaCasaPeriodo" />
+                    M. Casa <SortIcon field="mediaCasaPeriodo" />
                   </span>
                 </th>
                 <th
@@ -269,7 +282,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('mediaForaPeriodo')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Média Fora no Período">
-                    M.Fora <SortIcon field="mediaForaPeriodo" />
+                    M. Fora <SortIcon field="mediaForaPeriodo" />
                   </span>
                 </th>
                 <th
@@ -278,7 +291,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('mediaConquistada')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-positive)' }} title="Média de pontos conquistados pelo TIME nesta posição no Período (Mando real da próx rodada)">
-                    M.CONQ <SortIcon field="mediaConquistada" />
+                    M. CONQ <SortIcon field="mediaConquistada" />
                   </span>
                 </th>
 
@@ -288,7 +301,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('mediaCedida')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-negative)' }} title="Média de pontos cedidos pelo ADVERSÁRIO para esta posição no Período">
-                    M.CED <SortIcon field="mediaCedida" />
+                    M. CED <SortIcon field="mediaCedida" />
                   </span>
                 </th>
                 <th
@@ -305,8 +318,8 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   style={{ textAlign: 'right', cursor: 'pointer' }}
                   onClick={() => handleSort('mediaComposta')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-text-primary)' }} title="Média Composta Antiga">
-                    M.COMP <SortIcon field="mediaComposta" />
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-text-primary)' }} title="Fórmula: ((Média Mando * 0.6 + Média Confronto * 0.4) + Afinidade) * Fator de Risco">
+                    M. COMP <SortIcon field="mediaComposta" />
                   </span>
                 </th>
                 <th
@@ -329,7 +342,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                 </th>
                 <th
                   className={`table-header ${sortField === 'indiceMomento' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', paddingRight: '1rem', cursor: 'pointer' }}
+                  style={{ textAlign: 'right', paddingRight: '1.5rem', cursor: 'pointer' }}
                   onClick={() => handleSort('indiceMomento')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Momento: Avaliação do desempenho recente nas últimas 3 rodadas">
@@ -356,30 +369,36 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
 }
 
 function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaEnriquecido; index: number; isExpanded: boolean; onToggle: () => void }) {
-  const variacao = a.variacao_num;
-  const varColor = variacao > 0 ? 'var(--color-positive)' : variacao < 0 ? 'var(--color-negative)' : 'var(--color-text-dim)';
-  const VarIcon = variacao > 0 ? TrendingUp : variacao < 0 ? TrendingDown : Minus;
-  const statusColor = STATUS_COLORS[a.status_id] || 'var(--color-text-dim)';
-
   return (
     <>
       <tr
         onClick={onToggle}
-        style={{ cursor: 'pointer', transition: 'background 0.15s', background: isExpanded ? 'var(--color-bg-hover)' : 'transparent' }}
+        className="group"
+        style={{ 
+          cursor: 'pointer', 
+          transition: 'background 0.15s', 
+          borderBottom: '1px solid rgba(255,255,255,0.03)',
+          background: isExpanded ? 'rgba(0, 255, 136, 0.05)' : 'transparent'
+        }}
         onMouseOver={(e) => { if (!isExpanded) e.currentTarget.style.background = 'var(--color-bg-hover)'; }}
         onMouseOut={(e) => { if (!isExpanded) e.currentTarget.style.background = 'transparent'; }}
       >
         <td className="table-cell" style={{ paddingLeft: '1rem', color: 'var(--color-text-dim)', fontWeight: 700, fontSize: '0.8rem' }}>
           {index + 1}
         </td>
-        <td className="table-cell">
+        <td className="table-cell" style={{ 
+          position: 'sticky', 
+          left: 0, 
+          background: 'inherit',
+          zIndex: 10
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {a.clube?.escudos?.['30x30'] && (
               <img src={a.clube.escudos['30x30']} alt={a.clube.abreviacao} width={22} height={22} style={{ borderRadius: '4px' }} />
             )}
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{a.apelido}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)' }}>{a.clube?.nome_fantasia}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)' }}>{a.clube?.abreviacao}</div>
             </div>
           </div>
         </td>
@@ -394,11 +413,6 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
             }}
           >
             {a.posicao?.abreviacao?.toUpperCase()}
-          </span>
-        </td>
-        <td className="table-cell" style={{ textAlign: 'center' }}>
-          <span style={{ fontSize: '0.7rem', fontWeight: 600, color: statusColor }}>
-            {a.statusJogador?.nome || '—'}
           </span>
         </td>
         <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-text-secondary)' }}>
@@ -439,7 +453,7 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
         <td className="table-cell" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-info)' }}>
           {a.somaRanks || 0}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', paddingRight: '1rem', fontWeight: 600, color: 'var(--color-info)' }}>
+        <td className="table-cell" style={{ textAlign: 'right', paddingRight: '1.5rem', fontWeight: 600, color: 'var(--color-info)' }}>
           {a.indiceMomento?.toFixed(2) || '0.00'}
         </td>
       </tr>
