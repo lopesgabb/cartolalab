@@ -16,13 +16,14 @@ export default function RankingCard({
   metricLabel: string;
 }) {
   return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+    <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
       <div
         style={{
           padding: '1rem 1.25rem',
-          borderBottom: '2px solid var(--color-border)',
+          borderBottom: '1px solid var(--color-glass-border)',
           fontWeight: 700,
           fontSize: '0.9rem',
+          background: 'rgba(255, 255, 255, 0.02)',
         }}
       >
         {title}

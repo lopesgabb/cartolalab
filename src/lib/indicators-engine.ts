@@ -6,34 +6,53 @@ import { logger, startTimer } from './logger';
 import type { Timeframe, HistoricalAggregates, AggregatedStats } from './domain/aggregation';
 export type { Timeframe };
 
+interface PlayerStatsData {
+  atleta_id: number;
+  pontosUltimaRodada?: number;
+  total: AggregatedStats;
+  casa: AggregatedStats;
+  fora: AggregatedStats;
+  roundHistory: number[];
+}
+
 export async function computeAdvancedIndicators(
   atletasAtuais: AtletaEnriquecido[],
   proximasPartidas: Partida[],
   timeframe: Timeframe
 ): Promise<AtletaEnriquecido[]> {
 
-  // 1. Fetch aggregated historical data from Firestore (CQRS Read Model)
+  // 1. Fetch fragmented aggregated historical data (CQRS Read Model)
   const timer = startTimer();
 
-  const docRef = doc(db, 'system', 'aggregatedStats');
-  const docSnap = await getDoc(docRef);
+  // Load Metadata
+  const metaDocRef = doc(db, 'system', `stats_${timeframe}_metadata`);
+  const metaSnap = await getDoc(metaDocRef);
   
-  if (!docSnap.exists()) {
-    logger.error('indicators-engine', 'Aggregated stats not found in Firestore. Make sure to run the sync process.');
-    throw new Error('Aggregated stats not found. Please run the sync process first.');
+  if (!metaSnap.exists()) {
+    logger.error('indicators-engine', `Metadata for timeframe ${timeframe} not found in Firestore.`);
+    throw new Error(`Aggregated metadata for ${timeframe} not found. Run sync.`);
   }
 
-  const allAggregates = docSnap.data();
-  const historyData = allAggregates[timeframe] as HistoricalAggregates;
+  const { teamStats, globalLeagueAverages } = metaSnap.data();
 
-  if (!historyData) {
-    logger.error('indicators-engine', `Aggregated stats for timeframe ${timeframe} not found.`);
-    throw new Error(`Aggregated stats for timeframe ${timeframe} not found.`);
-  }
+  // Load Player Stats for all positions in parallel
+  // Positions in Cartola: 1 (GOL), 2 (LAT), 3 (ZAG), 4 (MEI), 5 (ATA), 6 (TEC)
+  const posIds = [1, 2, 3, 4, 5, 6];
+  const playerStatsSnaps = await Promise.all(
+    posIds.map(id => getDoc(doc(db, 'system', `stats_${timeframe}_players_pos_${id}`)))
+  );
 
-  logger.info('indicators-engine', `Firestore aggregated read complete`, timer.elapsed());
+  const playerStats: Record<number, PlayerStatsData> = {};
+  playerStatsSnaps.forEach(snap => {
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.playerStats) {
+        Object.assign(playerStats, data.playerStats);
+      }
+    }
+  });
 
-  const { playerStats, teamStats, globalLeagueAverages } = historyData;
+  logger.info('indicators-engine', `Firestore fragmented read complete (metadata + ${posIds.length} positions)`, timer.elapsed());
 
   // 2. Map current upcoming matches to know Home/Away status and Opponent for each team
   // Record<clube_id, { isHome: boolean, opponentId: number }>

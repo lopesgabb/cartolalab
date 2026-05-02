@@ -31,6 +31,7 @@ export interface HistoricalAggregates {
     total: AggregatedStats;
     casa: AggregatedStats;
     fora: AggregatedStats;
+    posicao_id: number;
     pontosUltimaRodada?: number;
     roundHistory: number[]; // raw score per round, ascending order
   }>;
@@ -124,6 +125,7 @@ export async function calculateHistoricalAggregates(timeframe: Timeframe): Promi
             total: { jogos: 0, pontos: 0, sumSq: 0, jogosReais: 0, pontosReais: 0, scouts: {} },
             casa: { jogos: 0, pontos: 0, sumSq: 0, jogosReais: 0, pontosReais: 0, scouts: {} },
             fora: { jogos: 0, pontos: 0, sumSq: 0, jogosReais: 0, pontosReais: 0, scouts: {} },
+            posicao_id: atleta.posicao_id,
             roundHistory: [],
           };
         }

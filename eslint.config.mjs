@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "sync-new-rounds.js",
+    "sync-round.js",
   ]),
 ]);
 

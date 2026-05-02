@@ -25,7 +25,7 @@ export default function JogadoresLoading() {
           <div key={i} style={{ padding: '0.75rem 0.5rem', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr 1fr', gap: '0.5rem', borderBottom: '1px solid var(--color-border)', opacity: 1 - i * 0.05 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--color-bg-hover)', animation: 'pulse 1.5s ease-in-out infinite', flexShrink: 0 }} />
-              <div style={{ width: `${80 + Math.random() * 60}px`, height: '14px', background: 'var(--color-bg-hover)', borderRadius: '4px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+              <div style={{ width: `${80 + (i % 5) * 15}px`, height: '14px', background: 'var(--color-bg-hover)', borderRadius: '4px', animation: 'pulse 1.5s ease-in-out infinite' }} />
             </div>
             {Array.from({ length: 6 }).map((_, j) => (
               <div key={j} style={{ height: '14px', background: 'var(--color-bg-hover)', borderRadius: '4px', animation: 'pulse 1.5s ease-in-out infinite' }} />

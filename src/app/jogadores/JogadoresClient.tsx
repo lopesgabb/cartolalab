@@ -3,10 +3,9 @@
 import { useState, useMemo } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { AtletaEnriquecido, Clube, Scout } from '@/types/cartola';
+import { POSICAO_NAMES, type AtletaEnriquecido, type Clube, type Scout, type PosicaoId } from '@/types/cartola';
 import type { Timeframe } from '@/lib/indicators-engine';
-import { STATUS_COLORS, POSICAO_NAMES, type PosicaoId } from '@/types/cartola';
-import { filterAtletas, sortAtletas, calcularScoutPoints } from '@/lib/indicators';
+import { filterAtletas, sortAtletas } from '@/lib/indicators';
 import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { POS_COLORS, SCOUT_LABELS } from '@/lib/constants';
 import Sparkline from '@/components/Sparkline';
@@ -18,6 +17,11 @@ interface JogadoresClientProps {
 }
 
 type SortField = 'media_num' | 'pontos_num' | 'indiceMomento' | 'custoBeneficio' | 'jogos_num' | 'mediaGeralPeriodo' | 'mediaCasaPeriodo' | 'mediaForaPeriodo' | 'mediaConquistada' | 'mediaCedida' | 'somaConqCed' | 'mccPersonalizado' | 'mediaComposta' | 'previsaoIA' | 'somaRanks';
+
+const SortIcon = ({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: 'asc' | 'desc' }) => {
+  if (sortField !== field) return null;
+  return sortDir === 'desc' ? <ChevronDown size={14} /> : <ChevronUp size={14} />;
+};
 
 export default function JogadoresClient({ atletas, clubes, currentPeriod }: JogadoresClientProps) {
   const [search, setSearch] = useState('');
@@ -47,8 +51,8 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
       search: search || undefined,
     });
 
-    const sortByFieldDesc = (arr: AtletaEnriquecido[], field: string) => {
-      return [...arr].sort((a, b) => ((b as any)[field] || 0) - ((a as any)[field] || 0));
+    const sortByFieldDesc = (arr: AtletaEnriquecido[], field: keyof AtletaEnriquecido) => {
+      return [...arr].sort((a, b) => ((b[field] as number) || 0) - ((a[field] as number) || 0));
     };
 
     const sortByPrevisao = sortByFieldDesc(result, 'previsaoIA');
@@ -89,11 +93,6 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
     }
   };
 
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return null;
-    return sortDir === 'desc' ? <ChevronDown size={14} /> : <ChevronUp size={14} />;
-  };
-
   const clubeList = useMemo(() => {
     return Object.values(clubes).sort((a, b) => a.nome_fantasia.localeCompare(b.nome_fantasia));
   }, [clubes]);
@@ -111,10 +110,10 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
       </div>
 
       {/* Filters */}
-      <div className="card" style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div className="glass-panel" style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem' }}>
         
         {/* Period Toggle */}
-        <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', borderBottom: '1px solid var(--color-glass-border)', paddingBottom: '1.25rem', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--color-text-dim)', alignSelf: 'center', fontWeight: 600, marginRight: '0.5rem' }}>Período Analisado:</span>
           {(['3', '5', 'all'] as Timeframe[]).map(p => (
              <button
@@ -135,7 +134,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
             placeholder="Buscar jogador ou time..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ paddingLeft: '2.25rem' }}
+            style={{ paddingLeft: '2.25rem', background: 'rgba(255,255,255,0.02)', borderColor: 'var(--color-glass-border)' }}
           />
           {search && (
             <button
@@ -148,20 +147,20 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
         </div>
 
         {/* Filter chips */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
           {/* Position filter */}
           {[1, 2, 3, 4, 5, 6].map((pos) => (
             <button
               key={pos}
               className={`filter-chip ${posicaoFilter === pos ? 'active' : ''}`}
               onClick={() => setPosicaoFilter(posicaoFilter === pos ? null : pos)}
-              style={posicaoFilter === pos ? { borderColor: POS_COLORS[pos], color: POS_COLORS[pos] } : {}}
+              style={posicaoFilter === pos ? { borderColor: POS_COLORS[pos], color: POS_COLORS[pos], background: `${POS_COLORS[pos]}15` } : {}}
             >
               {POSICAO_NAMES[pos as PosicaoId]}
             </button>
           ))}
 
-          <span style={{ width: '1px', background: 'var(--color-border)', margin: '0 0.25rem' }} />
+          <span style={{ width: '1px', height: '24px', background: 'var(--color-glass-border)', margin: '0 0.25rem' }} />
 
           {/* Status filter */}
           <button
@@ -177,12 +176,12 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
             ❓ Dúvida
           </button>
 
-          <span style={{ width: '1px', background: 'var(--color-border)', margin: '0 0.25rem' }} />
+          <span style={{ width: '1px', height: '24px', background: 'var(--color-glass-border)', margin: '0 0.25rem' }} />
 
           {/* Club filter */}
           <select
             className="input-field"
-            style={{ width: 'auto', minWidth: '160px', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+            style={{ width: 'auto', minWidth: '160px', padding: '0.375rem 0.75rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.02)', borderColor: 'var(--color-glass-border)' }}
             value={clubeFilter || ''}
             onChange={(e) => setClubeFilter(e.target.value ? Number(e.target.value) : null)}
           >
@@ -195,7 +194,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
           {/* Min games */}
           <select
             className="input-field"
-            style={{ width: 'auto', minWidth: '120px', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+            style={{ width: 'auto', minWidth: '120px', padding: '0.375rem 0.75rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.02)', borderColor: 'var(--color-glass-border)' }}
             value={minGames}
             onChange={(e) => setMinGames(Number(e.target.value))}
           >
@@ -237,7 +236,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('jogos_num')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                    J <SortIcon field="jogos_num" />
+                    J <SortIcon field="jogos_num" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -246,7 +245,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('pontos_num')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                    Últ. Pts <SortIcon field="pontos_num" />
+                    Últ. Pts <SortIcon field="pontos_num" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -255,7 +254,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('media_num')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Média Oficial Cartola">
-                    Média <SortIcon field="media_num" />
+                    Média <SortIcon field="media_num" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -264,7 +263,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('mediaGeralPeriodo')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-text-primary)' }} title="Média Geral no Período Selecionado">
-                    MG(p) <SortIcon field="mediaGeralPeriodo" />
+                    MG(p) <SortIcon field="mediaGeralPeriodo" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -273,7 +272,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('mediaCasaPeriodo')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Média em Casa no Período">
-                    M. Casa <SortIcon field="mediaCasaPeriodo" />
+                    M. Casa <SortIcon field="mediaCasaPeriodo" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -282,7 +281,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('mediaForaPeriodo')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Média Fora no Período">
-                    M. Fora <SortIcon field="mediaForaPeriodo" />
+                    M. Fora <SortIcon field="mediaForaPeriodo" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -291,7 +290,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('mediaConquistada')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-positive)' }} title="Média de pontos conquistados pelo TIME nesta posição no Período (Mando real da próx rodada)">
-                    M. CONQ <SortIcon field="mediaConquistada" />
+                    M. CONQ <SortIcon field="mediaConquistada" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
 
@@ -301,7 +300,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('mediaCedida')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-negative)' }} title="Média de pontos cedidos pelo ADVERSÁRIO para esta posição no Período">
-                    M. CED <SortIcon field="mediaCedida" />
+                    M. CED <SortIcon field="mediaCedida" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -310,7 +309,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('somaConqCed')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Soma (M.CONQ + M.CED)">
-                    SOMA <SortIcon field="somaConqCed" />
+                    SOMA <SortIcon field="somaConqCed" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -319,7 +318,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('mediaComposta')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-text-primary)' }} title="Fórmula: ((Média Mando * 0.6 + Média Confronto * 0.4) + Afinidade) * Fator de Risco">
-                    M. COMP <SortIcon field="mediaComposta" />
+                    M. COMP <SortIcon field="mediaComposta" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -328,7 +327,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('previsaoIA')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-accent)' }} title="Previsão da IA cruzando scouts">
-                    IA SCORE <SortIcon field="previsaoIA" />
+                    IA SCORE <SortIcon field="previsaoIA" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -337,7 +336,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('somaRanks')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-info)' }} title="Soma das posições (IA SCORE + M.COMP + MG(p) + M.MANDO), menor é melhor">
-                    SOMA POS <SortIcon field="somaRanks" />
+                    SOMA POS <SortIcon field="somaRanks" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
@@ -346,7 +345,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   onClick={() => handleSort('indiceMomento')}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Momento: Avaliação do desempenho recente nas últimas 3 rodadas">
-                    Momento <SortIcon field="indiceMomento" />
+                    Momento <SortIcon field="indiceMomento" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
               </tr>
@@ -369,19 +368,28 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
 }
 
 function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaEnriquecido; index: number; isExpanded: boolean; onToggle: () => void }) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggle();
+    }
+  };
+
   return (
     <>
       <tr
         onClick={onToggle}
-        className="group"
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="button"
+        aria-expanded={isExpanded}
+        className="group hover:bg-white/[0.03] outline-none focus-visible:bg-white/[0.05]"
         style={{ 
           cursor: 'pointer', 
           transition: 'background 0.15s', 
           borderBottom: '1px solid rgba(255,255,255,0.03)',
           background: isExpanded ? 'rgba(0, 255, 136, 0.05)' : 'transparent'
         }}
-        onMouseOver={(e) => { if (!isExpanded) e.currentTarget.style.background = 'var(--color-bg-hover)'; }}
-        onMouseOut={(e) => { if (!isExpanded) e.currentTarget.style.background = 'transparent'; }}
       >
         <td className="table-cell" style={{ paddingLeft: '1rem', color: 'var(--color-text-dim)', fontWeight: 700, fontSize: '0.8rem' }}>
           {index + 1}
@@ -389,7 +397,7 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
         <td className="table-cell" style={{ 
           position: 'sticky', 
           left: 0, 
-          background: 'inherit',
+          background: isExpanded ? 'rgba(20, 35, 30, 1)' : 'var(--color-bg-secondary)',
           zIndex: 10
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -453,14 +461,25 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
         <td className="table-cell" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-info)' }}>
           {a.somaRanks || 0}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', paddingRight: '1.5rem', fontWeight: 600, color: 'var(--color-info)' }}>
-          {a.indiceMomento?.toFixed(2) || '0.00'}
+        <td className="table-cell" style={{ textAlign: 'right', paddingRight: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            {a.lastRoundsHistory && a.lastRoundsHistory.length > 0 && (
+              <Sparkline
+                data={toRunningAvg(a.lastRoundsHistory)}
+                width={60}
+                height={20}
+              />
+            )}
+            <span style={{ fontWeight: 600, color: 'var(--color-info)', minWidth: '40px' }}>
+              {a.indiceMomento?.toFixed(2) || '0.00'}
+            </span>
+          </div>
         </td>
       </tr>
       <AnimatePresence>
         {isExpanded && (
           <tr>
-            <td colSpan={17} style={{ padding: 0 }}>
+            <td colSpan={16} style={{ padding: 0 }}>
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
@@ -539,9 +558,7 @@ function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
                 const highlightP = isPositive && aTotal && pTotal && (aTotal.media > pTotal.media);
 
                 return (
-                  <tr key={key} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background 0.2s' }}
-                      onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-bg-hover)'}
-                      onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                  <tr key={key} className="hover:bg-bg-hover transition-colors duration-200" style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '0.75rem', fontWeight: 600, color: isPositive ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>
                       {SCOUT_LABELS[sKey] || key}
                     </td>

@@ -1,0 +1,126 @@
+<h2>Interface de Jogadores (Premium)</h2>
+<p class="subtitle">Aplicando a estética Moderna/Glassmorphism à listagem de atletas.</p>
+
+<div class="section">
+  <div class="mockup">
+    <div class="mockup-header">Tela de Jogadores - Lista & Filtros</div>
+    <div class="mockup-body" style="background: #0A0F1A; border-radius: 8px; font-family: 'Inter', sans-serif; padding: 2rem; min-height: 600px;">
+      
+      <!-- TOP FILTERS BAR -->
+      <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+        <div style="flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.75rem 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+          <span style="color: #5A6E8A;">🔍</span>
+          <input type="text" placeholder="Buscar jogador..." style="background: transparent; border: none; color: white; outline: none; width: 100%; font-size: 0.9rem;">
+        </div>
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.75rem 1.25rem; color: #8B9DC3; font-size: 0.9rem; cursor: pointer;">
+          Filtrar Posição ▾
+        </div>
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.75rem 1.25rem; color: #8B9DC3; font-size: 0.9rem; cursor: pointer;">
+          Período: Últimas 5 ▾
+        </div>
+      </div>
+
+      <!-- PLAYERS TABLE AREA -->
+      <div style="background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; overflow: hidden;">
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.1);">
+              <th style="padding: 1.25rem; text-align: left; color: #5A6E8A; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Atleta</th>
+              <th style="padding: 1.25rem; text-align: center; color: #5A6E8A; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Média</th>
+              <th style="padding: 1.25rem; text-align: center; color: #5A6E8A; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">M. CONQ</th>
+              <th style="padding: 1.25rem; text-align: center; color: #5A6E8A; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">IA SCORE</th>
+              <th style="padding: 1.25rem; text-align: right; color: #5A6E8A; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Preço</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- PLAYER ROW -->
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+              <td style="padding: 1rem 1.25rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <div style="position: relative; width: 44px; height: 44px; background: #1A2235; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                    <img src="https://s.sde.globo.com/media/personagens/2024/04/17/personagem_v1_12345.png" style="width: 100%; position: absolute; bottom: 0;">
+                  </div>
+                  <div>
+                    <div style="color: white; font-weight: 700; font-size: 0.95rem;">Hulk</div>
+                    <div style="color: #5A6E8A; font-size: 0.75rem; font-weight: 600;">ATLÉTICO-MG • ATACANTE</div>
+                  </div>
+                </div>
+              </td>
+              <td style="padding: 1.25rem; text-align: center;">
+                <div style="color: white; font-weight: 800; font-size: 1.1rem;">8.15</div>
+              </td>
+              <td style="padding: 1.25rem; text-align: center;">
+                <div style="color: #00FF88; font-weight: 700; font-size: 1rem;">+1.24</div>
+              </td>
+              <td style="padding: 1.25rem; text-align: center;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #4DA6FF; color: #4DA6FF; font-weight: 800; font-size: 0.85rem; background: rgba(77,166,255,0.1);">
+                  92
+                </div>
+              </td>
+              <td style="padding: 1.25rem; text-align: right;">
+                <div style="color: #FFB800; font-weight: 700; font-size: 0.95rem;">C$ 18.22</div>
+              </td>
+            </tr>
+
+            <!-- ANOTHER PLAYER ROW -->
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+              <td style="padding: 1rem 1.25rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <div style="position: relative; width: 44px; height: 44px; background: #1A2235; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                    <img src="https://s.sde.globo.com/media/personagens/2024/04/17/personagem_v1_12345.png" style="width: 100%; position: absolute; bottom: 0;">
+                  </div>
+                  <div>
+                    <div style="color: white; font-weight: 700; font-size: 0.95rem;">Arrascaeta</div>
+                    <div style="color: #5A6E8A; font-size: 0.75rem; font-weight: 600;">FLAMENGO • MEIA</div>
+                  </div>
+                </div>
+              </td>
+              <td style="padding: 1.25rem; text-align: center;">
+                <div style="color: white; font-weight: 800; font-size: 1.1rem;">7.40</div>
+              </td>
+              <td style="padding: 1.25rem; text-align: center;">
+                <div style="color: #FF4D6A; font-weight: 700; font-size: 1rem;">-0.45</div>
+              </td>
+              <td style="padding: 1.25rem; text-align: center;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #4DA6FF; color: #4DA6FF; font-weight: 800; font-size: 0.85rem; background: rgba(77,166,255,0.1);">
+                  85
+                </div>
+              </td>
+              <td style="padding: 1.25rem; text-align: right;">
+                <div style="color: #FFB800; font-weight: 700; font-size: 0.95rem;">C$ 15.10</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<h3>Como você prefere a densidade de informações na listagem?</h3>
+<div class="options">
+  <div class="option" data-choice="dense" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Foco em Dados (Tabela Compacta)</h3>
+      <p>Ver o máximo de jogadores e colunas de uma vez. Ideal para analistas "hardcore".</p>
+    </div>
+  </div>
+  <div class="option" data-choice="cards" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Foco em Experiência (Cards/Linhas Espaçadas)</h3>
+      <p>Mais espaço entre as linhas, fotos maiores e elementos visuais que facilitam a leitura rápida.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Híbrido Inteligente</h3>
+      <p>Uma tabela limpa que se expande ao clicar para mostrar detalhes profundos sem sair da página.</p>
+    </div>
+  </div>
+</div>

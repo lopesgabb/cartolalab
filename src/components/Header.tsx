@@ -17,12 +17,12 @@ export default function Header() {
   return (
     <header
       style={{
-        background: 'var(--color-bg-secondary)',
-        borderBottom: '2px solid var(--color-border)',
+        background: 'rgba(10, 15, 26, 0.8)', // Translucent version of bg-deep
+        borderBottom: '1px solid var(--color-glass-border)',
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        backdropFilter: 'blur(12px)',
+        backdropFilter: 'blur(16px)',
       }}
     >
       <nav
@@ -53,6 +53,7 @@ export default function Header() {
               <Link
                 key={item.href}
                 href={item.href}
+                className={`transition-all duration-200 ${!isActive ? 'hover:bg-white/[0.05] hover:text-white' : ''}`}
                 style={{
                   padding: '0.5rem 1rem',
                   borderRadius: '8px',
@@ -61,7 +62,7 @@ export default function Header() {
                   textDecoration: 'none',
                   color: isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)',
                   background: isActive ? 'var(--color-accent-glow)' : 'transparent',
-                  transition: 'all 0.15s',
+                  border: isActive ? '1px solid rgba(0, 255, 136, 0.2)' : '1px solid transparent',
                 }}
               >
                 {item.label}

@@ -23,10 +23,18 @@ export default function EmAlta({ atletas }: EmAltaProps) {
         return (
           <div
             key={atleta.atleta_id}
-            className="card"
-            style={{ padding: '1rem', transition: 'transform 0.15s', cursor: 'default' }}
-            onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; }}
-            onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; }}
+            className="glass-panel"
+            style={{ padding: '1.25rem', transition: 'all 0.2s ease', cursor: 'default' }}
+            onMouseOver={e => { 
+              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
+              (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255, 255, 255, 0.15)';
+              (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-premium)';
+            }}
+            onMouseOut={e => { 
+              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+              (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--color-glass-border)';
+              (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+            }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.875rem' }}>
               {atleta.clube?.escudos?.['30x30'] && (

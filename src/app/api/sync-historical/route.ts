@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, writeBatch, getDocs, collection } from 'firebase/firestore';
 import { log } from '@/lib/logger';
-import { calculateHistoricalAggregates } from '@/lib/domain/aggregation';
+import { calculateHistoricalAggregates, type Timeframe } from '@/lib/domain/aggregation';
 import crypto from 'crypto';
 
 function authenticate(request: Request): NextResponse | null {
@@ -140,19 +140,41 @@ export async function POST(request: Request) {
 
     // After all raw data is synced, compute and store the CQRS aggregated statistics
     log('info', 'sync-historical', 'Computing CQRS aggregates...');
-    const [agg3, agg5, aggAll] = await Promise.all([
-      calculateHistoricalAggregates('3'),
-      calculateHistoricalAggregates('5'),
-      calculateHistoricalAggregates('all')
-    ]);
+    const timeframes: Timeframe[] = ['3', '5', 'all'];
 
-    await setDoc(doc(db, 'system', 'aggregatedStats'), {
-      '3': agg3,
-      '5': agg5,
-      'all': aggAll,
-      updatedAt: new Date().toISOString()
-    });
-    log('info', 'sync-historical', 'CQRS aggregates saved successfully.');
+    for (const tf of timeframes) {
+      log('info', 'sync-historical', `Processing aggregates for timeframe: ${tf}`);
+      const historyData = await calculateHistoricalAggregates(tf);
+
+      // 1. Save Metadata (teamStats + globalLeagueAverages)
+      const metaDocRef = doc(db, 'system', `stats_${tf}_metadata`);
+      await setDoc(metaDocRef, {
+        teamStats: historyData.teamStats,
+        globalLeagueAverages: historyData.globalLeagueAverages,
+        updatedAt: new Date().toISOString()
+      });
+
+      // 2. Save Players grouped by position to avoid 1MB limit
+      const playersByPos: Record<number, Record<number, unknown>> = {};
+      
+      const playerStats = historyData.playerStats;
+      for (const atletaIdStr in playerStats) {
+        const atletaId = parseInt(atletaIdStr, 10);
+        const stats = playerStats[atletaId];
+        const posId = stats.posicao_id || 0;
+        
+        if (!playersByPos[posId]) playersByPos[posId] = {};
+        playersByPos[posId][atletaId] = stats;
+      }
+
+      // Save each position group as a separate document
+      for (const [posId, players] of Object.entries(playersByPos)) {
+        const posDocRef = doc(db, 'system', `stats_${tf}_players_pos_${posId}`);
+        await setDoc(posDocRef, { playerStats: players });
+      }
+      
+      log('info', 'sync-historical', `Aggregates for ${tf} saved successfully.`);
+    }
 
     return NextResponse.json({ success: true, results, aggregated: true });
   } catch (error: unknown) {
@@ -183,24 +205,38 @@ export async function DELETE(request: Request) {
   if (!round) return NextResponse.json({ error: 'Missing round param' }, { status: 400 });
   
   try {
-    // Delete atletas
+    // Delete atletas with chunked batches
     const atletasSnap = await getDocs(collection(db, 'rodadas', round, 'atletas'));
     let batch = writeBatch(db);
     let opCount = 0;
-    atletasSnap.forEach(d => {
+    
+    for (const d of atletasSnap.docs) {
       batch.delete(d.ref);
       opCount++;
-    });
+      
+      if (opCount >= 490) {
+        await batch.commit();
+        batch = writeBatch(db);
+        opCount = 0;
+      }
+    }
     if (opCount > 0) await batch.commit();
 
-    // Delete partidas
+    // Delete partidas with chunked batches
     const partidasSnap = await getDocs(collection(db, 'rodadas', round, 'partidas'));
     batch = writeBatch(db);
     opCount = 0;
-    partidasSnap.forEach(d => {
+    
+    for (const d of partidasSnap.docs) {
       batch.delete(d.ref);
       opCount++;
-    });
+      
+      if (opCount >= 490) {
+        await batch.commit();
+        batch = writeBatch(db);
+        opCount = 0;
+      }
+    }
     if (opCount > 0) await batch.commit();
 
     log('info', 'sync-historical', `Round ${round} data cleared`);
