@@ -16,7 +16,7 @@ interface JogadoresClientProps {
   currentPeriod: Timeframe;
 }
 
-type SortField = 'media_num' | 'pontos_num' | 'indiceMomento' | 'custoBeneficio' | 'jogos_num' | 'mediaGeralPeriodo' | 'mediaCasaPeriodo' | 'mediaForaPeriodo' | 'mediaConquistada' | 'mediaCedida' | 'somaConqCed' | 'mccPersonalizado' | 'mediaComposta' | 'previsaoIA' | 'somaRanks';
+type SortField = 'media_num' | 'pontos_num' | 'indiceMomento' | 'custoBeneficio' | 'jogos_num' | 'mediaGeralPeriodo' | 'mediaCasaPeriodo' | 'mediaForaPeriodo' | 'mediaConquistada' | 'mediaCedida' | 'somaConqCed' | 'mccPersonalizado' | 'mediaComposta' | 'previsaoIA' | 'somaRanks' | 'mediaNotas';
 
 const SortIcon = ({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: 'asc' | 'desc' }) => {
   if (sortField !== field) return null;
@@ -75,9 +75,16 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
       const cRank = rankMComp.get(a.atleta_id) || 0;
       const gRank = rankMgp.get(a.atleta_id) || 0;
       const mandoRank = rankMando.get(a.atleta_id) || 0;
+      const pNota = a.previsaoIA || 0;
+      const cNota = a.mediaComposta || 0;
+      const gNota = a.mediaGeralPeriodo || 0;
+      const mandoNota = a.proximoJogoMando === 'casa' ? (a.mediaCasaPeriodo || 0) : a.proximoJogoMando === 'fora' ? (a.mediaForaPeriodo || 0) : (a.mediaGeralPeriodo || 0);
+      const mediaNotas = (pNota + cNota + gNota + mandoNota) / 4;
+
       return {
         ...a,
         somaRanks: pRank + cRank + gRank + mandoRank,
+        mediaNotas: mediaNotas,
       };
     });
 
@@ -311,6 +318,14 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
                   </span>
                 </th>
                 <th
+                  className={`table-header ${sortField === 'mediaNotas' ? 'active' : ''} text-right cursor-pointer`}
+                  onClick={() => handleSort('mediaNotas')}
+                >
+                  <span className="inline-flex items-center gap-0.5 text-[var(--color-positive)]" title="Média das notas (IA SCORE + M.COMP + MG(p) + M.MANDO), maior é melhor">
+                    MÉDIA NOTAS <SortIcon field="mediaNotas" sortField={sortField} sortDir={sortDir} />
+                  </span>
+                </th>
+                <th
                   className={`table-header ${sortField === 'indiceMomento' ? 'active' : ''} text-right pr-6 cursor-pointer`}
                   onClick={() => handleSort('indiceMomento')}
                 >
@@ -419,6 +434,9 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
         <td className="table-cell text-right font-bold text-[var(--color-info)]">
           {a.somaRanks || 0}
         </td>
+        <td className="table-cell text-right font-extrabold text-[var(--color-positive)] bg-white/[0.03]">
+          {a.mediaNotas?.toFixed(2) || '0.00'}
+        </td>
         <td className="table-cell text-right pr-6">
           <div className="flex items-center justify-end gap-3">
             {a.lastRoundsHistory && a.lastRoundsHistory.length > 0 && (
@@ -437,7 +455,7 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
       <AnimatePresence>
         {isExpanded && (
           <tr>
-            <td colSpan={16} className="p-0">
+            <td colSpan={17} className="p-0">
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}

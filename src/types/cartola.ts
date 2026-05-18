@@ -216,6 +216,7 @@ export interface AtletaEnriquecido extends Atleta {
   mccPersonalizado?: number;
   mediaComposta?: number;
   somaRanks?: number;
+  mediaNotas?: number;
   
   // Detailed Scout Indicators (New format)
   scoutsPlayer?: ScoutContextStats;
