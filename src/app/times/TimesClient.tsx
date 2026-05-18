@@ -14,27 +14,27 @@ export interface TeamStats {
 
 export default function TimesClient({ teamStats }: { teamStats: TeamStats[] }) {
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '1.5rem' }}>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }} className="gradient-text">
+    <div className="container-max py-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold gradient-text">
           Estatísticas de Times
         </h1>
-        <p style={{ color: 'var(--color-text-dim)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+        <p className="text-[var(--color-text-dim)] text-sm mt-1">
           Média de pontuação por posição — {teamStats.length} clubes
         </p>
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
+      <div className="table-pro-container">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse min-w-[900px]">
             <thead>
-              <tr style={{ background: 'var(--color-bg-secondary)' }}>
-                <th className="table-header" style={{ textAlign: 'left', paddingLeft: '1rem', width: '40px' }}>#</th>
-                <th className="table-header" style={{ textAlign: 'left', minWidth: '180px' }}>Time</th>
-                <th className="table-header active" style={{ textAlign: 'right' }}>Média Geral</th>
-                <th className="table-header" style={{ textAlign: 'right' }}>Jogadores</th>
+              <tr className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-glass-border)]">
+                <th className="table-header text-left pl-4 w-10">#</th>
+                <th className="table-header text-left min-w-[180px]">Time</th>
+                <th className="table-header active text-right">Média Geral</th>
+                <th className="table-header text-right">Jogadores</th>
                 {[1, 2, 3, 4, 5, 6].map((posId) => (
-                  <th key={posId} className="table-header" style={{ textAlign: 'right', color: POS_COLORS[posId] }}>
+                  <th key={posId} className="table-header text-right" style={{ color: POS_COLORS[posId] }}>
                     {POSICAO_NAMES[posId as PosicaoId]?.split(' ')[0]?.substring(0, 3).toUpperCase()}
                   </th>
                 ))}
@@ -42,47 +42,42 @@ export default function TimesClient({ teamStats }: { teamStats: TeamStats[] }) {
             </thead>
             <tbody>
               {teamStats.map((ts, i) => (
-                <tr
-                  key={ts.clube.id}
-                  style={{ transition: 'background 0.15s' }}
-                  onMouseOver={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                  onMouseOut={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <td className="table-cell" style={{ paddingLeft: '1rem', color: 'var(--color-text-dim)', fontWeight: 700, fontSize: '0.8rem' }}>
+                <tr key={ts.clube.id} className="interactive-row border-b border-white/[0.03]">
+                  <td className="table-cell pl-4 text-[var(--color-text-dim)] font-bold text-xs">
                     {i + 1}
                   </td>
                   <td className="table-cell">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className="flex items-center gap-2">
                       {ts.clube.escudos?.['30x30'] && (
-                        <img src={ts.clube.escudos['30x30']} alt={ts.clube.abreviacao} width={24} height={24} style={{ borderRadius: '4px' }} />
+                        <img src={ts.clube.escudos['30x30']} alt={ts.clube.abreviacao} width={24} height={24} className="rounded" />
                       )}
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{ts.clube.nome_fantasia}</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)' }}>{ts.clube.abreviacao}</div>
+                        <div className="font-semibold text-[0.85rem]">{ts.clube.nome_fantasia}</div>
+                        <div className="text-[0.7rem] text-[var(--color-text-dim)]">{ts.clube.abreviacao}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="table-cell" style={{ textAlign: 'right', fontWeight: 700, color: ts.mediaGeral > 3 ? 'var(--color-positive)' : ts.mediaGeral > 0 ? 'var(--color-text-primary)' : 'var(--color-negative)' }}>
+                  <td className={`table-cell text-right font-bold ${ts.mediaGeral > 3 ? 'text-[var(--color-positive)]' : ts.mediaGeral > 0 ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-negative)]'}`}>
                     {ts.mediaGeral.toFixed(2)}
                   </td>
-                  <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-text-dim)' }}>
+                  <td className="table-cell text-right text-[var(--color-text-dim)]">
                     {ts.totalJogadores}
                   </td>
                   {[1, 2, 3, 4, 5, 6].map((posId) => {
                     const pos = ts.porPosicao[posId];
                     return (
-                      <td key={posId} className="table-cell" style={{ textAlign: 'right' }}>
+                      <td key={posId} className="table-cell text-right">
                         {pos ? (
                           <div>
-                            <div style={{ fontWeight: 600, color: pos.media > 4 ? 'var(--color-positive)' : 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
+                            <div className={`font-semibold text-[0.85rem] ${pos.media > 4 ? 'text-[var(--color-positive)]' : 'text-[var(--color-text-secondary)]'}`}>
                               {pos.media.toFixed(2)}
                             </div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dim)' }}>
+                            <div className="text-[0.65rem] text-[var(--color-text-dim)]">
                               {pos.count}j
                             </div>
                           </div>
                         ) : (
-                          <span style={{ color: 'var(--color-text-dim)', fontSize: '0.8rem' }}>—</span>
+                          <span className="text-[var(--color-text-dim)] text-[0.8rem]">—</span>
                         )}
                       </td>
                     );

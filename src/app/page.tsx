@@ -53,39 +53,36 @@ export default async function DashboardPage() {
   const fechamentoDate = new Date(fechamento.ano, fechamento.mes - 1, fechamento.dia, fechamento.hora, fechamento.minuto);
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '1.5rem' }}>
+    <div className="container-max py-6">
       {/* Market Status Banner */}
       <div
-        className="card-glow"
-        style={{
-          marginBottom: '2rem',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '1.5rem',
-          borderColor: mercadoAberto ? 'var(--color-accent)' : 'var(--color-warning)',
-        }}
+        className="card-glow mb-8 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-6"
+        style={{ borderColor: mercadoAberto ? 'var(--color-accent)' : 'var(--color-warning)' }}
       >
         <div>
           <p className="stat-label">Status do Mercado</p>
-          <p className="stat-value" style={{ color: mercadoAberto ? 'var(--color-accent)' : 'var(--color-warning)', marginTop: '0.25rem' }}>
-            {mercadoAberto ? '🟢 Aberto' : '🔴 Fechado'}
+          <p 
+            className="stat-value mt-1" 
+            style={{ color: mercadoAberto ? 'var(--color-accent)' : 'var(--color-warning)' }}
+          >
+            {mercadoAberto ? 'Aberta' : 'Fechado'}
           </p>
         </div>
         <div>
           <p className="stat-label">Rodada Atual</p>
-          <p className="stat-value" style={{ color: 'var(--color-info)', marginTop: '0.25rem' }}>
+          <p className="stat-value text-[var(--color-info)] mt-1">
             {mercadoStatus.nome_rodada}
           </p>
         </div>
         <div>
           <p className="stat-label">Temporada</p>
-          <p className="stat-value" style={{ marginTop: '0.25rem' }}>
+          <p className="stat-value mt-1">
             {mercadoStatus.temporada}
           </p>
         </div>
         <div>
           <p className="stat-label">{mercadoAberto ? 'Fechamento' : 'Rodada'}</p>
-          <p className="stat-value" style={{ fontSize: '1.1rem', marginTop: '0.25rem' }}>
+          <p className="stat-value text-[1.1rem] mt-1">
             {fechamentoDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
             {' '}
             {fechamentoDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -93,27 +90,24 @@ export default async function DashboardPage() {
         </div>
         <div>
           <p className="stat-label">Times Escalados</p>
-          <p className="stat-value" style={{ marginTop: '0.25rem' }}>
+          <p className="stat-value mt-1">
             {mercadoStatus.times_escalados.toLocaleString('pt-BR')}
           </p>
         </div>
       </div>
 
-
-      {/* Em Alta Section */}
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1rem', marginTop: '2rem' }} className="gradient-text">
+      <h2 className="text-2xl font-extrabold mb-4 mt-8 gradient-text">
         🔥 Em Alta — Maior Momento
       </h2>
-      <p style={{ color: 'var(--color-text-dim)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+      <p className="text-[var(--color-text-dim)] text-[0.85rem] mb-6">
         Jogadores com maior Índice de Momento nas últimas 3 rodadas vs. média histórica
       </p>
       <EmAlta atletas={emAlta} />
 
-      {/* Top 4 Section */}
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', marginTop: '2rem' }} className="gradient-text">
+      <h2 className="text-2xl font-extrabold mb-6 mt-8 gradient-text">
         🎯 Melhores Oportunidades por Posição (Previsão IA)
       </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6 mb-12">
         <RankingCard title="🧤 Goleiros" atletas={topGoleiros} metric="previsaoIA" metricLabel="IA SCORE" />
         <RankingCard title="🛡️ Laterais" atletas={topLaterais} metric="previsaoIA" metricLabel="IA SCORE" />
         <RankingCard title="🧱 Zagueiros" atletas={topZagueiros} metric="previsaoIA" metricLabel="IA SCORE" />
@@ -121,11 +115,10 @@ export default async function DashboardPage() {
         <RankingCard title="⚽ Atacantes" atletas={topAtacantes} metric="previsaoIA" metricLabel="IA SCORE" />
       </div>
 
-      {/* Grid of tables */}
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem' }} className="gradient-text">
+      <h2 className="text-2xl font-extrabold mb-6 gradient-text">
         📊 Rankings Gerais
       </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 640px), 1fr))', gap: '1.5rem' }}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,640px),1fr))] gap-6">
         <RankingCard title="🏆 Top 10 — Melhores Médias" atletas={topMedia} metric="media_num" metricLabel="MG" />
         <RankingCard title="💎 Top 10 — Previsões da IA" atletas={topScore} metric="previsaoIA" metricLabel="IA SCORE" />
         <RankingCard title="⚡ Top 10 — Última Rodada" atletas={topRodada} metric="pontos_num" metricLabel="PTS" />

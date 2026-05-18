@@ -16,27 +16,19 @@ export default function RankingCard({
   metricLabel: string;
 }) {
   return (
-    <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
-      <div
-        style={{
-          padding: '1rem 1.25rem',
-          borderBottom: '1px solid var(--color-glass-border)',
-          fontWeight: 700,
-          fontSize: '0.9rem',
-          background: 'rgba(255, 255, 255, 0.02)',
-        }}
-      >
+    <div className="glass-panel p-0 overflow-hidden">
+      <div className="px-5 py-4 border-b border-[var(--color-glass-border)] font-bold text-[0.9rem] bg-white/[0.02]">
         {title}
       </div>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
           <thead>
-            <tr style={{ background: 'var(--color-bg-secondary)' }}>
-              <th className="table-header" style={{ textAlign: 'left', paddingLeft: '1rem', width: '30px' }}>#</th>
-              <th className="table-header" style={{ textAlign: 'left' }}>Jogador</th>
-              <th className="table-header" style={{ textAlign: 'center' }}>Pos</th>
-              <th className="table-header" style={{ textAlign: 'right' }}>Preço</th>
-              <th className="table-header active" style={{ textAlign: 'right', paddingRight: '1rem' }}>{metricLabel}</th>
+            <tr className="bg-[var(--color-bg-secondary)]">
+              <th className="table-header text-left pl-4 w-[30px]">#</th>
+              <th className="table-header text-left">Jogador</th>
+              <th className="table-header text-center">Pos</th>
+              <th className="table-header text-right">Preço</th>
+              <th className="table-header active text-right pr-4">{metricLabel}</th>
             </tr>
           </thead>
           <tbody>
@@ -55,56 +47,44 @@ export default function RankingCard({
               const val = getMetricVal();
               const isPositive = val > 0;
               return (
-                <tr
-                  key={a.atleta_id}
-                  style={{ transition: 'background 0.15s' }}
-                  onMouseOver={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-                  onMouseOut={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <td className="table-cell" style={{ paddingLeft: '1rem', color: 'var(--color-text-dim)', fontWeight: 700 }}>
+                <tr key={a.atleta_id} className="interactive-row">
+                  <td className="table-cell pl-4 text-[var(--color-text-dim)] font-bold">
                     {i + 1}
                   </td>
                   <td className="table-cell">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className="flex items-center gap-2">
                       {a.clube?.escudos?.['30x30'] && (
                         <img
                           src={a.clube.escudos['30x30']}
                           alt={a.clube.abreviacao}
                           width={20}
                           height={20}
-                          style={{ borderRadius: '4px' }}
+                          className="rounded"
                         />
                       )}
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{a.apelido}</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)' }}>{a.clube?.apelido}</div>
+                        <div className="font-semibold text-[0.85rem]">{a.apelido}</div>
+                        <div className="text-[0.7rem] text-[var(--color-text-dim)]">{a.clube?.apelido}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="table-cell" style={{ textAlign: 'center' }}>
+                  <td className="table-cell text-center">
                     <span
-                      className="badge"
+                      className="badge text-[0.65rem]"
                       style={{
                         color: POS_COLORS[a.posicao_id] || 'var(--color-text-secondary)',
                         borderColor: POS_COLORS[a.posicao_id] || 'var(--color-border)',
                         background: `${POS_COLORS[a.posicao_id] || 'var(--color-border)'}15`,
-                        fontSize: '0.65rem',
                       }}
                     >
                       {a.posicao?.abreviacao?.toUpperCase()}
                     </span>
                   </td>
-                  <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-text-secondary)' }}>
+                  <td className="table-cell text-right text-[var(--color-text-secondary)]">
                     C$ {a.preco_num.toFixed(2)}
                   </td>
                   <td
-                    className="table-cell"
-                    style={{
-                      textAlign: 'right',
-                      paddingRight: '1rem',
-                      fontWeight: 700,
-                      color: isPositive ? 'var(--color-positive)' : 'var(--color-negative)',
-                    }}
+                    className={`table-cell text-right pr-4 font-bold ${isPositive ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}
                   >
                     {typeof val === 'number' ? val.toFixed(2) : val}
                   </td>

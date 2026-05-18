@@ -98,23 +98,23 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
   }, [clubes]);
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '1.5rem' }}>
+    <div className="container-max py-6">
       {/* Page Title */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }} className="gradient-text">
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold gradient-text">
           Estatísticas de Jogadores
         </h1>
-        <p style={{ color: 'var(--color-text-dim)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+        <p className="text-[var(--color-text-dim)] text-sm mt-1">
           {filtered.length} jogadores encontrados
         </p>
       </div>
 
       {/* Filters */}
-      <div className="glass-panel" style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem' }}>
+      <div className="glass-panel mb-6 flex flex-col gap-5 p-6">
         
         {/* Period Toggle */}
-        <div style={{ display: 'flex', gap: '0.75rem', borderBottom: '1px solid var(--color-glass-border)', paddingBottom: '1.25rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-dim)', alignSelf: 'center', fontWeight: 600, marginRight: '0.5rem' }}>Período Analisado:</span>
+        <div className="flex gap-3 border-b border-[var(--color-glass-border)] pb-5 flex-wrap">
+          <span className="text-sm color-[var(--color-text-dim)] self-center font-semibold mr-2">Período Analisado:</span>
           {(['3', '5', 'all'] as Timeframe[]).map(p => (
              <button
                 key={p}
@@ -127,19 +127,18 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
         </div>
 
         {/* Search */}
-        <div style={{ position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-dim)' }} />
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-dim)]" />
           <input
-            className="input-field"
+            className="input-field pl-9 bg-white/[0.02] border-[var(--color-glass-border)]"
             placeholder="Buscar jogador ou time..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ paddingLeft: '2.25rem', background: 'rgba(255,255,255,0.02)', borderColor: 'var(--color-glass-border)' }}
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--color-text-dim)', cursor: 'pointer' }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none text-[var(--color-text-dim)] cursor-pointer"
             >
               <X size={16} />
             </button>
@@ -147,7 +146,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
         </div>
 
         {/* Filter chips */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+        <div className="flex flex-wrap gap-3 items-center">
           {/* Position filter */}
           {[1, 2, 3, 4, 5, 6].map((pos) => (
             <button
@@ -160,7 +159,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
             </button>
           ))}
 
-          <span style={{ width: '1px', height: '24px', background: 'var(--color-glass-border)', margin: '0 0.25rem' }} />
+          <span className="w-[1px] h-6 bg-[var(--color-glass-border)] mx-1" />
 
           {/* Status filter */}
           <button
@@ -176,12 +175,11 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
             ❓ Dúvida
           </button>
 
-          <span style={{ width: '1px', height: '24px', background: 'var(--color-glass-border)', margin: '0 0.25rem' }} />
+          <span className="w-[1px] h-6 bg-[var(--color-glass-border)] mx-1" />
 
           {/* Club filter */}
           <select
-            className="input-field"
-            style={{ width: 'auto', minWidth: '160px', padding: '0.375rem 0.75rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.02)', borderColor: 'var(--color-glass-border)' }}
+            className="input-field w-auto min-w-[160px] py-1.5 px-3 text-[0.8rem] bg-white/[0.02] border-[var(--color-glass-border)]"
             value={clubeFilter || ''}
             onChange={(e) => setClubeFilter(e.target.value ? Number(e.target.value) : null)}
           >
@@ -193,8 +191,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
 
           {/* Min games */}
           <select
-            className="input-field"
-            style={{ width: 'auto', minWidth: '120px', padding: '0.375rem 0.75rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.02)', borderColor: 'var(--color-glass-border)' }}
+            className="input-field w-auto min-w-[120px] py-1.5 px-3 text-[0.8rem] bg-white/[0.02] border-[var(--color-glass-border)]"
             value={minGames}
             onChange={(e) => setMinGames(Number(e.target.value))}
           >
@@ -208,143 +205,116 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
       </div>
 
       {/* Data Table */}
-      <div className="table-pro-container" style={{ position: 'relative' }}>
-        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1600px', fontVariantNumeric: 'tabular-nums' }}>
+      <div className="table-pro-container relative">
+        <div className="overflow-x-auto touch-pan-x">
+          <table className="w-full border-collapse min-w-[1600px] tabular-nums">
             <thead>
-              <tr style={{ 
-                background: 'rgba(255,255,255,0.02)', 
-                borderBottom: '1px solid var(--color-glass-border)',
-                position: 'sticky',
-                top: 0,
-                backdropFilter: 'blur(10px)',
-                zIndex: 30
-              }}>
-                <th className="table-header" style={{ textAlign: 'left', paddingLeft: '1rem', width: '40px' }}>#</th>
-                <th className="table-header" style={{ 
-                  textAlign: 'left', 
-                  minWidth: '200px',
-                  position: 'sticky',
-                  left: 0,
-                  background: 'var(--color-bg-secondary)',
-                  zIndex: 31
-                }}>Atleta</th>
-                <th className="table-header" style={{ textAlign: 'center' }}>Pos</th>
+              <tr className="bg-white/[0.02] border-b border-[var(--color-glass-border)] sticky top-0 backdrop-blur-[10px] z-30">
+                <th className="table-header text-left pl-4 w-10">#</th>
+                <th className="table-header text-left min-w-[200px] sticky left-0 bg-[var(--color-bg-secondary)] z-31">Atleta</th>
+                <th className="table-header text-center">Pos</th>
                 <th
-                  className={`table-header ${sortField === 'jogos_num' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'jogos_num' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('jogos_num')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                  <span className="inline-flex items-center gap-0.5">
                     J <SortIcon field="jogos_num" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'pontos_num' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'pontos_num' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('pontos_num')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                  <span className="inline-flex items-center gap-0.5">
                     Últ. Pts <SortIcon field="pontos_num" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'media_num' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'media_num' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('media_num')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Média Oficial Cartola">
+                  <span className="inline-flex items-center gap-0.5" title="Média Oficial Cartola">
                     Média <SortIcon field="media_num" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'mediaGeralPeriodo' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'mediaGeralPeriodo' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('mediaGeralPeriodo')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-text-primary)' }} title="Média Geral no Período Selecionado">
+                  <span className="inline-flex items-center gap-0.5 text-[var(--color-text-primary)]" title="Média Geral no Período Selecionado">
                     MG(p) <SortIcon field="mediaGeralPeriodo" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'mediaCasaPeriodo' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'mediaCasaPeriodo' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('mediaCasaPeriodo')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Média em Casa no Período">
+                  <span className="inline-flex items-center gap-0.5" title="Média em Casa no Período">
                     M. Casa <SortIcon field="mediaCasaPeriodo" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'mediaForaPeriodo' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'mediaForaPeriodo' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('mediaForaPeriodo')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Média Fora no Período">
+                  <span className="inline-flex items-center gap-0.5" title="Média Fora no Período">
                     M. Fora <SortIcon field="mediaForaPeriodo" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'mediaConquistada' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'mediaConquistada' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('mediaConquistada')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-positive)' }} title="Média de pontos conquistados pelo TIME nesta posição no Período (Mando real da próx rodada)">
+                  <span className="inline-flex items-center gap-0.5 text-[var(--color-positive)]" title="Média de pontos conquistados pelo TIME nesta posição no Período (Mando real da próx rodada)">
                     M. CONQ <SortIcon field="mediaConquistada" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
 
                 <th
-                  className={`table-header ${sortField === 'mediaCedida' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'mediaCedida' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('mediaCedida')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-negative)' }} title="Média de pontos cedidos pelo ADVERSÁRIO para esta posição no Período">
+                  <span className="inline-flex items-center gap-0.5 text-[var(--color-negative)]" title="Média de pontos cedidos pelo ADVERSÁRIO para esta posição no Período">
                     M. CED <SortIcon field="mediaCedida" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'somaConqCed' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'somaConqCed' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('somaConqCed')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Soma (M.CONQ + M.CED)">
+                  <span className="inline-flex items-center gap-0.5" title="Soma (M.CONQ + M.CED)">
                     SOMA <SortIcon field="somaConqCed" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'mediaComposta' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'mediaComposta' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('mediaComposta')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-text-primary)' }} title="Fórmula: ((Média Mando * 0.6 + Média Confronto * 0.4) + Afinidade) * Fator de Risco">
+                  <span className="inline-flex items-center gap-0.5 text-[var(--color-text-primary)]" title="Fórmula: ((Média Mando * 0.6 + Média Confronto * 0.4) + Afinidade) * Fator de Risco">
                     M. COMP <SortIcon field="mediaComposta" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'previsaoIA' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'previsaoIA' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('previsaoIA')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-accent)' }} title="Previsão da IA cruzando scouts">
+                  <span className="inline-flex items-center gap-0.5 text-[var(--color-accent)]" title="Previsão da IA cruzando scouts">
                     IA SCORE <SortIcon field="previsaoIA" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'somaRanks' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'somaRanks' ? 'active' : ''} text-right cursor-pointer`}
                   onClick={() => handleSort('somaRanks')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: 'var(--color-info)' }} title="Soma das posições (IA SCORE + M.COMP + MG(p) + M.MANDO), menor é melhor">
+                  <span className="inline-flex items-center gap-0.5 text-[var(--color-info)]" title="Soma das posições (IA SCORE + M.COMP + MG(p) + M.MANDO), menor é melhor">
                     SOMA POS <SortIcon field="somaRanks" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
                 <th
-                  className={`table-header ${sortField === 'indiceMomento' ? 'active' : ''}`}
-                  style={{ textAlign: 'right', paddingRight: '1.5rem', cursor: 'pointer' }}
+                  className={`table-header ${sortField === 'indiceMomento' ? 'active' : ''} text-right pr-6 cursor-pointer`}
                   onClick={() => handleSort('indiceMomento')}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }} title="Momento: Avaliação do desempenho recente nas últimas 3 rodadas">
+                  <span className="inline-flex items-center gap-0.5" title="Momento: Avaliação do desempenho recente nas últimas 3 rodadas">
                     Momento <SortIcon field="indiceMomento" sortField={sortField} sortDir={sortDir} />
                   </span>
                 </th>
@@ -358,7 +328,7 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
           </table>
         </div>
         {filtered.length > 100 && (
-          <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-text-dim)', fontSize: '0.85rem', borderTop: '1px solid var(--color-border)' }}>
+          <div className="p-4 text-center text-[var(--color-text-dim)] text-[0.85rem] border-t border-[var(--color-border)]">
             Mostrando 100 de {filtered.length} jogadores. Use os filtros para refinar.
           </div>
         )}
@@ -383,86 +353,74 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
         tabIndex={0}
         role="button"
         aria-expanded={isExpanded}
-        className="group hover:bg-white/[0.03] outline-none focus-visible:bg-white/[0.05]"
-        style={{ 
-          cursor: 'pointer', 
-          transition: 'background 0.15s', 
-          borderBottom: '1px solid rgba(255,255,255,0.03)',
-          background: isExpanded ? 'rgba(0, 255, 136, 0.05)' : 'transparent'
-        }}
+        className={`interactive-row cursor-pointer outline-none border-b border-white/[0.03] ${isExpanded ? 'bg-[rgba(0,255,136,0.05)]' : ''}`}
       >
-        <td className="table-cell" style={{ paddingLeft: '1rem', color: 'var(--color-text-dim)', fontWeight: 700, fontSize: '0.8rem' }}>
+        <td className="table-cell pl-4 text-[var(--color-text-dim)] font-bold text-[0.8rem]">
           {index + 1}
         </td>
-        <td className="table-cell" style={{ 
-          position: 'sticky', 
-          left: 0, 
-          background: isExpanded ? 'rgba(20, 35, 30, 1)' : 'var(--color-bg-secondary)',
-          zIndex: 10
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <td className={`table-cell sticky left-0 z-10 ${isExpanded ? 'bg-[rgba(20, 35, 30, 1)]' : 'bg-[var(--color-bg-secondary)]'}`}>
+          <div className="flex items-center gap-2">
             {a.clube?.escudos?.['30x30'] && (
-              <img src={a.clube.escudos['30x30']} alt={a.clube.abreviacao} width={22} height={22} style={{ borderRadius: '4px' }} />
+              <img src={a.clube.escudos['30x30']} alt={a.clube.abreviacao} width={22} height={22} className="rounded" />
             )}
             <div>
-              <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{a.apelido}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)' }}>{a.clube?.abreviacao}</div>
+              <div className="font-semibold text-[0.85rem]">{a.apelido}</div>
+              <div className="text-[0.7rem] text-[var(--color-text-dim)]">{a.clube?.abreviacao}</div>
             </div>
           </div>
         </td>
-        <td className="table-cell" style={{ textAlign: 'center' }}>
+        <td className="table-cell text-center">
           <span
-            className="badge"
+            className="badge text-[0.65rem]"
             style={{
               color: POS_COLORS[a.posicao_id],
               borderColor: POS_COLORS[a.posicao_id],
               background: `${POS_COLORS[a.posicao_id]}15`,
-              fontSize: '0.65rem',
             }}
           >
             {a.posicao?.abreviacao?.toUpperCase()}
           </span>
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-text-secondary)' }}>
+        <td className="table-cell text-right text-[var(--color-text-secondary)]">
           {a.jogos_num}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 600, color: a.pontos_num > 0 ? 'var(--color-positive)' : a.pontos_num < 0 ? 'var(--color-negative)' : 'var(--color-text-secondary)' }}>
+        <td className={`table-cell text-right font-semibold ${a.pontos_num > 0 ? 'text-[var(--color-positive)]' : a.pontos_num < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-text-secondary)]'}`}>
           {a.pontos_num.toFixed(1)}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 700, color: a.media_num > 5 ? 'var(--color-positive)' : a.media_num > 0 ? 'var(--color-text-primary)' : 'var(--color-negative)' }}>
+        <td className={`table-cell text-right font-bold ${a.media_num > 5 ? 'text-[var(--color-positive)]' : a.media_num > 0 ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-negative)]'}`}>
           {a.media_num.toFixed(2)}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+        <td className="table-cell text-right font-bold text-[var(--color-text-primary)]">
           {a.mediaGeralPeriodo?.toFixed(2) || '0.00'}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>
+        <td className="table-cell text-right text-[var(--color-text-secondary)] text-[0.8rem]">
           {a.mediaCasaPeriodo?.toFixed(2) || '0.00'}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>
+        <td className="table-cell text-right text-[var(--color-text-secondary)] text-[0.8rem]">
           {a.mediaForaPeriodo?.toFixed(2) || '0.00'}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-positive)', fontWeight: 600 }}>
+        <td className="table-cell text-right text-[var(--color-positive)] font-semibold">
           {a.mediaConquistada?.toFixed(2) || '0.00'}
         </td>
 
-        <td className="table-cell" style={{ textAlign: 'right', color: 'var(--color-negative)', fontWeight: 600 }}>
+        <td className="table-cell text-right text-[var(--color-negative)] font-semibold">
           {a.mediaCedida?.toFixed(2) || '0.00'}
         </td>
 
-        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+        <td className="table-cell text-right font-bold text-[var(--color-text-primary)]">
           {a.somaConqCed?.toFixed(2) || '0.00'}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 800, color: 'var(--color-text-primary)' }}>
+        <td className="table-cell text-right font-extrabold text-[var(--color-text-primary)]">
           {a.mediaComposta?.toFixed(2) || '0.00'}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 800, color: 'var(--color-accent)', background: 'rgba(255,255,255,0.03)' }}>
+        <td className="table-cell text-right font-extrabold text-[var(--color-accent)] bg-white/[0.03]">
           {a.previsaoIA?.toFixed(2) || '0.00'}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-info)' }}>
+        <td className="table-cell text-right font-bold text-[var(--color-info)]">
           {a.somaRanks || 0}
         </td>
-        <td className="table-cell" style={{ textAlign: 'right', paddingRight: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem' }}>
+        <td className="table-cell text-right pr-6">
+          <div className="flex items-center justify-end gap-3">
             {a.lastRoundsHistory && a.lastRoundsHistory.length > 0 && (
               <Sparkline
                 data={toRunningAvg(a.lastRoundsHistory)}
@@ -470,7 +428,7 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
                 height={20}
               />
             )}
-            <span style={{ fontWeight: 600, color: 'var(--color-info)', minWidth: '40px' }}>
+            <span className="font-semibold text-[var(--color-info)] min-w-[40px]">
               {a.indiceMomento?.toFixed(2) || '0.00'}
             </span>
           </div>
@@ -479,13 +437,13 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
       <AnimatePresence>
         {isExpanded && (
           <tr>
-            <td colSpan={16} style={{ padding: 0 }}>
+            <td colSpan={16} className="p-0">
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                style={{ overflow: 'hidden' }}
+                className="overflow-hidden"
               >
                 <ScoutDetail atleta={a} />
               </motion.div>
@@ -520,27 +478,27 @@ function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
   });
 
   return (
-    <div style={{ padding: '1.5rem', background: 'var(--color-bg-secondary)', borderBottom: '2px solid var(--color-border)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '1.5rem' }}>
+    <div className="p-6 bg-[var(--color-bg-secondary)] border-b-2 border-[var(--color-border)]">
+      <div className="grid grid-cols-[minmax(0,1fr)_300px] gap-6">
         
         {/* Left Side: Scout Matrix Table */}
-        <div style={{ background: 'var(--color-bg-primary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', overflowX: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-dim)', letterSpacing: '0.05em' }}>
+        <div className="bg-[var(--color-bg-primary)] p-5 rounded-xl border border-[var(--color-border)] shadow-md overflow-x-auto">
+          <div className="flex items-center justify-between mb-5">
+            <span className="font-bold text-[0.85rem] text-[var(--color-text-dim)] tracking-wider uppercase">
               CRUZAMENTO DE SCOUTS (PREVISÃO VS ADVERSÁRIO)
             </span>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+          <table className="w-full border-collapse text-[0.8rem]">
             <thead>
-              <tr style={{ background: 'var(--color-bg-hover)', borderBottom: '1px solid var(--color-border)' }}>
-                <th style={{ textAlign: 'left', padding: '0.75rem', fontWeight: 600, color: 'var(--color-text-dim)' }}>Scout</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 600, color: 'var(--color-text-dim)' }}>Jogador (Total)</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 600, color: 'var(--color-text-dim)' }}>Adv. Cede (Total)</th>
+              <tr className="bg-[var(--color-bg-hover)] border-b border-[var(--color-border)]">
+                <th className="text-left p-3 font-semibold text-[var(--color-text-dim)]">Scout</th>
+                <th className="text-right p-3 font-semibold text-[var(--color-text-dim)]">Jogador (Total)</th>
+                <th className="text-right p-3 font-semibold text-[var(--color-text-dim)]">Adv. Cede (Total)</th>
                 {proximoJogoMando && (
                   <>
-                    <th style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 600, color: 'var(--color-text-dim)' }}>Jog. ({proximoJogoMando === 'casa' ? 'C' : 'F'})</th>
-                    <th style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 600, color: 'var(--color-text-dim)' }}>Adv. Cede ({proximoJogoMando === 'casa' ? 'F' : 'C'})</th>
+                    <th className="text-right p-3 font-semibold text-[var(--color-text-dim)]">Jog. ({proximoJogoMando === 'casa' ? 'C' : 'F'})</th>
+                    <th className="text-right p-3 font-semibold text-[var(--color-text-dim)]">Adv. Cede ({proximoJogoMando === 'casa' ? 'F' : 'C'})</th>
                   </>
                 )}
               </tr>
@@ -558,23 +516,23 @@ function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
                 const highlightP = isPositive && aTotal && pTotal && (aTotal.media > pTotal.media);
 
                 return (
-                  <tr key={key} className="hover:bg-bg-hover transition-colors duration-200" style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    <td style={{ padding: '0.75rem', fontWeight: 600, color: isPositive ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>
+                  <tr key={key} className="hover:bg-[var(--color-bg-hover)] transition-colors duration-200 border-b border-[var(--color-border)]">
+                    <td className={`p-3 font-semibold ${isPositive ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]'}`}>
                       {SCOUT_LABELS[sKey] || key}
                     </td>
-                    <td style={{ padding: '0.75rem', textAlign: 'right', color: pTotal ? 'var(--color-text-primary)' : 'var(--color-text-dim)' }}>
+                    <td className={`p-3 text-right ${pTotal ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-dim)]'}`}>
                       {pTotal ? pTotal.media.toFixed(2) : '-'}
                     </td>
-                    <td style={{ padding: '0.75rem', textAlign: 'right', color: aTotal ? 'var(--color-text-primary)' : 'var(--color-text-dim)', fontWeight: highlightP ? 700 : 400 }}>
+                    <td className={`p-3 text-right ${aTotal ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-dim)]'} ${highlightP ? 'font-bold' : ''}`}>
                       {aTotal ? aTotal.media.toFixed(2) : '-'}
-                      {highlightP && <span title="Adversário cede mais do que a média deste jogador" style={{ color: 'var(--color-positive)', fontSize: '10px', marginLeft: '4px' }}>▲</span>}
+                      {highlightP && <span title="Adversário cede mais do que a média deste jogador" className="text-[var(--color-positive)] text-[10px] ml-1">▲</span>}
                     </td>
                     {proximoJogoMando && (
                       <>
-                        <td style={{ padding: '0.75rem', textAlign: 'right', color: pMando ? 'var(--color-text-primary)' : 'var(--color-text-dim)', background: 'rgba(255,255,255,0.015)' }}>
+                        <td className={`p-3 text-right bg-white/[0.015] ${pMando ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-dim)]'}`}>
                           {pMando ? pMando.media.toFixed(2) : '-'}
                         </td>
-                        <td style={{ padding: '0.75rem', textAlign: 'right', color: aMando ? 'var(--color-text-primary)' : 'var(--color-text-dim)', background: 'rgba(255,255,255,0.015)' }}>
+                        <td className={`p-3 text-right bg-white/[0.015] ${aMando ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-dim)]'}`}>
                           {aMando ? aMando.media.toFixed(2) : '-'}
                         </td>
                       </>
@@ -584,7 +542,7 @@ function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
               })}
               {keysArray.length === 0 && (
                 <tr>
-                  <td colSpan={proximoJogoMando ? 5 : 3} style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-text-dim)' }}>
+                  <td colSpan={proximoJogoMando ? 5 : 3} className="p-6 text-center text-[var(--color-text-dim)]">
                     Faltam dados de histórico neste recorte.
                   </td>
                 </tr>
@@ -595,16 +553,13 @@ function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
 
         {/* Right Side: Evolução por Rodada (Sparkline) */}
         {atleta.lastRoundsHistory && atleta.lastRoundsHistory.length > 0 && (
-          <div style={{ background: 'var(--color-bg-primary)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-dim)', letterSpacing: '0.05em' }}>EVOLUÇÃO POR RODADA</span>
+          <div className="bg-[var(--color-bg-primary)] p-5 rounded-xl border border-[var(--color-border)] shadow-md">
+            <div className="flex items-center justify-between mb-5">
+              <span className="font-bold text-[0.85rem] text-[var(--color-text-dim)] tracking-wider uppercase">EVOLUÇÃO POR RODADA</span>
               {atleta.indiceMomento !== undefined && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)', fontWeight: 600 }}>MOMENTO</span>
-                  <span style={{
-                    fontWeight: 800, fontSize: '0.9rem',
-                    color: atleta.indiceMomento > (atleta.mediaGeralPeriodo ?? 0) ? 'var(--color-positive)' : 'var(--color-negative)',
-                  }}>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[0.7rem] text-[var(--color-text-dim)] font-semibold">MOMENTO</span>
+                  <span className={`font-extrabold text-[0.9rem] ${atleta.indiceMomento > (atleta.mediaGeralPeriodo ?? 0) ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}>
                     {atleta.indiceMomento.toFixed(2)}
                   </span>
                 </div>
@@ -616,20 +571,20 @@ function ScoutDetail({ atleta }: { atleta: AtletaEnriquecido }) {
               height={80}
               showDots
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem', fontSize: '0.7rem', color: 'var(--color-text-dim)' }}>
+            <div className="flex justify-between mt-3 text-[0.7rem] text-[var(--color-text-dim)]">
               <span>Rd. {1}</span>
               <span>Rd. {atleta.lastRoundsHistory.length}</span>
             </div>
-            <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <div style={{ background: 'var(--color-bg-hover)', borderRadius: '8px', padding: '0.625rem', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dim)', fontWeight: 600 }}>MELHOR</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-positive)' }}>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="bg-[var(--color-bg-hover)] rounded-lg p-2.5 text-center">
+                <div className="text-[0.65rem] text-[var(--color-text-dim)] font-semibold uppercase">MELHOR</div>
+                <div className="text-[0.9rem] font-extrabold text-[var(--color-positive)]">
                   {Math.max(...atleta.lastRoundsHistory).toFixed(1)}
                 </div>
               </div>
-              <div style={{ background: 'var(--color-bg-hover)', borderRadius: '8px', padding: '0.625rem', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dim)', fontWeight: 600 }}>PIOR</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-negative)' }}>
+              <div className="bg-[var(--color-bg-hover)] rounded-lg p-2.5 text-center">
+                <div className="text-[0.65rem] text-[var(--color-text-dim)] font-semibold uppercase">PIOR</div>
+                <div className="text-[0.9rem] font-extrabold text-[var(--color-negative)]">
                   {Math.min(...atleta.lastRoundsHistory).toFixed(1)}
                 </div>
               </div>

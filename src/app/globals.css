@@ -41,6 +41,12 @@
   --color-accent-gold: #FFB800;
 
   --shadow-premium: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* New semantic tokens */
+  --blur-header: 16px;
+  --blur-card: 12px;
+  --glass-bg-header: rgba(10, 15, 26, 0.8);
+  --border-accent-glow: rgba(0, 255, 136, 0.2);
 }
 
 @layer base {
@@ -83,9 +89,28 @@
 @layer components {
   .glass-panel {
     background: var(--color-glass-bg);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(var(--blur-card));
     border: 1px solid var(--color-glass-border);
     border-radius: 16px;
+  }
+
+  .container-max {
+    @apply max-w-[1400px] mx-auto px-6;
+  }
+
+  .glass-header {
+    @apply sticky top-0 z-50;
+    background: var(--glass-bg-header);
+    backdrop-filter: blur(var(--blur-header));
+    border-bottom: 1px solid var(--color-glass-border);
+  }
+
+  .interactive-row {
+    @apply transition-colors duration-150 hover:bg-[var(--color-bg-hover)];
+  }
+
+  .interactive-card {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15 hover:shadow-[var(--shadow-premium)];
   }
 
   .table-pro-container {

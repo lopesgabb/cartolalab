@@ -42,6 +42,29 @@ O projeto foi refatorado para operar como uma plataforma SaaS pronta para produ�
 -   **Segurança API**: Node.js Native Crypto APIs
 -   **Animações**: [Framer Motion](https://www.framer.com/motion/)
 
+## 🔄 Sincronização de Dados (Atualizando as rodadas)
+
+O CartolaLab possui uma API segura projetada para baixar os dados brutos oficiais do Cartola FC e recalcular todas as métricas e médias complexas do campeonato automaticamente.
+
+Para atualizar o seu painel com novas rodadas, você deve enviar uma requisição via terminal para a API, autenticando-se com a sua chave secreta (que fica no arquivo `.env.local` na variável `SYNC_API_SECRET`).
+
+> **Importante:** O seu servidor local do projeto precisa estar rodando (usando `npm run dev`, por exemplo, na porta 3000 ou 3001) para que a API receba a requisição.
+
+### 1. Atualizar apenas uma rodada específica (Mais rápido - Recomendado)
+Use este comando para baixar apenas a rodada mais recente. Exemplo para baixar a **rodada 16**:
+
+```bash
+curl -X POST -H "x-api-secret: SUA_CHAVE_SECRETA_AQUI" -d '{"start": 16, "end": 16}' -H "Content-Type: application/json" http://localhost:3000/api/sync-historical
+```
+*Nota: A arquitetura do sistema é inteligente. Mesmo que você mande baixar apenas a rodada 16, após concluir o download ele olhará para todas as rodadas salvas no seu banco de dados e recalculará as médias totais e rankings de todos os jogadores para garantir a precisão matemática atualizada.*
+
+### 2. Atualizar várias rodadas juntas (Carga inicial)
+Se for a primeira vez que você roda o projeto e quiser baixar um lote de rodadas de uma só vez, informe o intervalo completo. Exemplo para baixar da **rodada 1 até a 16**:
+
+```bash
+curl -X POST -H "x-api-secret: SUA_CHAVE_SECRETA_AQUI" -d '{"start": 1, "end": 16}' -H "Content-Type: application/json" http://localhost:3000/api/sync-historical
+```
+
 ---
 
 ## 📄 Licença
