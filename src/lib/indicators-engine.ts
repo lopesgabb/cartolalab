@@ -171,6 +171,7 @@ export async function computeAdvancedIndicators(
       // SOMA
       enriched.somaConqCed = mConq + mCed;
       enriched.proximoJogoMando = isHome ? 'casa' : 'fora';
+      enriched.proximoAdversarioId = matchContext.opponentId;
 
       // Extract Player Scouts across contexts
       const scoutsPlayer: ScoutContextStats = { total: {}, casa: {}, fora: {} };

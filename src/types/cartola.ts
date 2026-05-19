@@ -228,6 +228,8 @@ export interface AtletaEnriquecido extends Atleta {
 
   // Match Context
   proximoJogoMando?: 'casa' | 'fora';
+  proximoAdversarioId?: number;
+  confrontoFormatado?: string;
 
   // Phase 3: Momento & Sparkline
   indiceMomento?: number;       // Weighted avg of last 3 rounds (most recent = highest weight)

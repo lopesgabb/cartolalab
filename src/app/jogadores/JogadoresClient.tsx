@@ -81,15 +81,27 @@ export default function JogadoresClient({ atletas, clubes, currentPeriod }: Joga
       const mandoNota = a.proximoJogoMando === 'casa' ? (a.mediaCasaPeriodo || 0) : a.proximoJogoMando === 'fora' ? (a.mediaForaPeriodo || 0) : (a.mediaGeralPeriodo || 0);
       const mediaNotas = (pNota + cNota + gNota + mandoNota) / 4;
 
+      const clubeAbrev = a.clube?.abreviacao?.toUpperCase() || '';
+      let confrontoFormatado = clubeAbrev;
+      if (a.proximoAdversarioId && clubes[a.proximoAdversarioId]) {
+        const advAbrev = clubes[a.proximoAdversarioId].abreviacao?.toUpperCase() || '';
+        if (a.proximoJogoMando === 'casa') {
+          confrontoFormatado = `${clubeAbrev} X ${advAbrev}`;
+        } else if (a.proximoJogoMando === 'fora') {
+          confrontoFormatado = `${advAbrev} X ${clubeAbrev}`;
+        }
+      }
+
       return {
         ...a,
         somaRanks: pRank + cRank + gRank + mandoRank,
         mediaNotas: mediaNotas,
+        confrontoFormatado,
       };
     });
 
     return sortAtletas(result, sortField, sortDir);
-  }, [atletas, search, posicaoFilter, clubeFilter, statusFilter, sortField, sortDir, minGames]);
+  }, [atletas, search, posicaoFilter, clubeFilter, statusFilter, sortField, sortDir, minGames, clubes]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -380,7 +392,7 @@ function PlayerRow({ atleta: a, index, isExpanded, onToggle }: { atleta: AtletaE
             )}
             <div>
               <div className="font-semibold text-[0.85rem]">{a.apelido}</div>
-              <div className="text-[0.7rem] text-[var(--color-text-dim)]">{a.clube?.abreviacao}</div>
+              <div className="text-[0.7rem] text-[var(--color-text-dim)]">{a.confrontoFormatado || a.clube?.abreviacao}</div>
             </div>
           </div>
         </td>
